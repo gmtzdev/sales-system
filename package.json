@@ -2,11 +2,12 @@
   "name": "sales-app",
   "version": "1.0.0",
   "description": "Aplicación de ventas con Electron",
-  "main": "src/main.js",
+  "main": "dist-main/main.js",
   "scripts": {
-    "dev": "concurrently -k \"vite --config vite.config.mjs\" \"wait-on http://localhost:5173 && electron ./src/main.js\"",
+    "dev": "concurrently -k \"vite --config vite.config.mjs\" \"tsc -p tsconfig.node.json && wait-on http://localhost:5173 && electron ./dist-main/main.js\"",
     "build:renderer": "vite build --config vite.config.mjs",
-    "dist": "npm run build:renderer && electron-builder",
+    "build:main": "tsc -p tsconfig.node.json",
+    "dist": "npm run build:renderer && npm run build:main && electron-builder",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -20,8 +21,7 @@
       "output": "dist"
     },
     "files": [
-      "src/main.js",
-      "src/preload.js",
+      "dist-main/**",
       "dist-renderer/**",
       "package.json"
     ],
@@ -56,10 +56,14 @@
     "sequelize": "^6.37.8"
   },
   "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "concurrently": "^9.2.1",
     "electron": "^41.3.0",
     "electron-builder": "^26.8.1",
+    "typescript": "^6.0.3",
     "vite": "^8.0.10",
     "wait-on": "^9.0.5"
   }

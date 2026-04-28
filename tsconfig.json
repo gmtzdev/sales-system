@@ -1,0 +1,32 @@
+{
+    "compilerOptions": {
+        // Target modern browsers (Chromium via Electron)
+        "target": "ES2020",
+        "useDefineForClassFields": true,
+        "lib": [
+            "ES2020",
+            "DOM",
+            "DOM.Iterable"
+        ],
+        // Vite uses esbuild as bundler, so use "bundler" resolution
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
+        // Allow existing .js / .jsx files to coexist with new .ts / .tsx files
+        "allowJs": true,
+        "resolveJsonModule": true,
+        // Required when allowImportingTsExtensions is true
+        "noEmit": true,
+        // Performance: each file is transpiled independently by Vite/esbuild
+        "isolatedModules": true,
+        "moduleDetection": "force",
+        // React JSX transform (no need to import React in every file)
+        "jsx": "react-jsx",
+        // Type safety
+        "strict": true,
+        "skipLibCheck": true
+    },
+    "include": [
+        "src/view"
+    ]
+}

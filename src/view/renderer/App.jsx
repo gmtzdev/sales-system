@@ -7,6 +7,8 @@ import Dashboard from './pages/Dashboard'
 import Ventas from './pages/Ventas'
 import VentasNueva from './pages/VentasNueva'
 import VentasHistorial from './pages/VentasHistorial'
+import Inventory from './pages/sales/Inventory'
+import Suppliers from './pages/admin/Suppliers'
 
 function App() {
     return (
@@ -25,7 +27,7 @@ function App() {
                     />
 
                     <Route
-                        path="/ventas"
+                        path="/sales"
                         element={
                             <ProtectedRoute>
                                 <Ventas />
@@ -48,6 +50,22 @@ function App() {
                             path="historial"
                             element={<VentasHistorial />}
                         />
+
+                        <Route
+                            path='inventory'
+                            element={<Inventory />}
+                        />
+                    </Route>
+
+                    <Route
+                        path="/admin"
+                        element={
+                            <ProtectedRoute>
+                                <Suppliers />
+                            </ProtectedRoute>
+                        }
+                    >
+                        <Route path="suppliers" element={<Suppliers />} />
                     </Route>
 
                     <Route path="*" element={<Navigate to="/" replace />} />

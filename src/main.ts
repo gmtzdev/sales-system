@@ -4,6 +4,7 @@ import { initDatabase, closeDatabase } from './database/models'
 import { registerProductosHandlers } from './ipc/productos.handlers'
 import { registerUsuariosHandlers } from './ipc/usuarios.handlers'
 import { registerVentasHandlers } from './ipc/ventas.handlers'
+import { registerSuppliersHandlers } from './ipc/suppliers.handlers'
 
 const isDev: boolean = !app.isPackaged
 
@@ -11,6 +12,7 @@ const isDev: boolean = !app.isPackaged
 registerProductosHandlers()
 registerUsuariosHandlers()
 registerVentasHandlers()
+registerSuppliersHandlers()
 
 function createWindow(): void {
     const win = new BrowserWindow({

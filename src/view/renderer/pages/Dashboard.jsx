@@ -5,11 +5,13 @@ import { Button } from 'primereact/button'
 import Productos from './Productos'
 import Usuarios from './Usuarios'
 import Suppliers from './admin/Suppliers'
+import Departaments from './admin/Departaments'
 
 const PAGES = [
     { key: 'productos', label: 'Productos', icon: 'pi pi-box', component: <Productos /> },
     { key: 'usuarios', label: 'Usuarios', icon: 'pi pi-users', component: <Usuarios /> },
     { key: 'suppliers', label: 'Suppliers', icon: 'pi pi-truck', component: <Suppliers /> },
+    { key: 'departaments', label: 'Departments', icon: 'pi pi-sitemap', component: <Departaments /> },
 ]
 
 function Dashboard() {

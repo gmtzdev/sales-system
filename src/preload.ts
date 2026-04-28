@@ -54,5 +54,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
         update: (id: number, data: IpcOptions) => ipcRenderer.invoke('suppliers:update', id, data),
         delete: (id: number) => ipcRenderer.invoke('suppliers:delete', id),
     },
+
+    // Departments API
+    departaments: {
+        findAll: (opts?: IpcOptions) => ipcRenderer.invoke('departaments:findAll', opts),
+        findById: (id: number) => ipcRenderer.invoke('departaments:findById', id),
+        create: (data: IpcOptions) => ipcRenderer.invoke('departaments:create', data),
+        update: (id: number, data: IpcOptions) => ipcRenderer.invoke('departaments:update', id, data),
+        delete: (id: number) => ipcRenderer.invoke('departaments:delete', id),
+    },
 })
 

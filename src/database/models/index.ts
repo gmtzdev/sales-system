@@ -4,6 +4,7 @@ import Usuario from './Usuario'
 import Venta from './Venta'
 import VentaDetalle from './VentaDetalle'
 import Supplier from './Supplier'
+import Departament from './Departament'
 
 // Associations
 Venta.hasMany(VentaDetalle, { foreignKey: 'venta_id', as: 'detalles' })
@@ -23,4 +24,4 @@ export async function closeDatabase(): Promise<void> {
     await sequelize.close()
 }
 
-export { sequelize, Producto, Usuario, Venta, VentaDetalle, Supplier }
+export { sequelize, Producto, Usuario, Venta, VentaDetalle, Supplier, Departament }

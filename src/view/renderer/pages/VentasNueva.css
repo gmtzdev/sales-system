@@ -1,0 +1,4 @@
+.carrito-row-selected td {
+    background-color: #dbeafe !important;
+    border-left: 3px solid #1e90ff;
+}

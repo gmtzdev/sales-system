@@ -1,0 +1,66 @@
+{
+  "name": "sales-app",
+  "version": "1.0.0",
+  "description": "Aplicación de ventas con Electron",
+  "main": "src/main.js",
+  "scripts": {
+    "dev": "concurrently -k \"vite --config vite.config.mjs\" \"wait-on http://localhost:5173 && electron ./src/main.js\"",
+    "build:renderer": "vite build --config vite.config.mjs",
+    "dist": "npm run build:renderer && electron-builder",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "build": {
+    "appId": "com.sales.app",
+    "productName": "Sales App",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/main.js",
+      "src/preload.js",
+      "dist-renderer/**",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Sales App"
+    }
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.4.2",
+    "mysql2": "^3.22.2",
+    "primeicons": "^7.0.0",
+    "primereact": "^10.9.7",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-router-dom": "^7.14.2",
+    "sequelize": "^6.37.8"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^9.2.1",
+    "electron": "^41.3.0",
+    "electron-builder": "^26.8.1",
+    "vite": "^8.0.10",
+    "wait-on": "^9.0.5"
+  }
+}

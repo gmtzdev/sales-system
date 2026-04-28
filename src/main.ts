@@ -1,14 +1,9 @@
 import { app, BrowserWindow } from 'electron'
 import path from 'path'
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { initDatabase, closeDatabase } = require('./database/models')
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { registerProductosHandlers } = require('./ipc/productos.handlers')
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { registerUsuariosHandlers } = require('./ipc/usuarios.handlers')
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { registerVentasHandlers } = require('./ipc/ventas.handlers')
+import { initDatabase, closeDatabase } from './database/models'
+import { registerProductosHandlers } from './ipc/productos.handlers'
+import { registerUsuariosHandlers } from './ipc/usuarios.handlers'
+import { registerVentasHandlers } from './ipc/ventas.handlers'
 
 const isDev: boolean = !app.isPackaged
 

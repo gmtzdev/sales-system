@@ -22,7 +22,7 @@
     "include": [
         "src/main.ts",
         "src/preload.ts",
-        "src/database/**/*.js",
-        "src/ipc/**/*.js"
+        "src/database/**/*.ts",
+        "src/ipc/**/*.ts"
     ]
 }

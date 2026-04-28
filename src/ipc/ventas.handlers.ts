@@ -1,9 +1,27 @@
-const { ipcMain } = require('electron')
-const { Venta, VentaDetalle, Producto, sequelize } = require('../database/models')
+import { ipcMain } from 'electron'
+import type { Order } from 'sequelize'
+import { sequelize, Venta, VentaDetalle, Producto } from '../database/models'
+import type { VentaAttributes } from '../database/models/Venta'
 
-function registerVentasHandlers() {
-    // Crear una venta completa con sus detalles en una transacción
-    ipcMain.handle('ventas:create', async (_event, { venta, detalles }) => {
+interface VentaDetallePayload {
+    producto_id: number
+    cantidad: number
+    precio_unitario: number
+    subtotal: number
+}
+
+interface CreateVentaPayload {
+    venta: Omit<VentaAttributes, 'id'>
+    detalles: VentaDetallePayload[]
+}
+
+interface FindAllOptions {
+    order?: Order
+}
+
+export function registerVentasHandlers(): void {
+    // Create a complete sale with its line items in a single transaction
+    ipcMain.handle('ventas:create', async (_event, { venta, detalles }: CreateVentaPayload) => {
         const t = await sequelize.transaction()
         try {
             const nuevaVenta = await Venta.create(venta, { transaction: t })
@@ -19,7 +37,7 @@ function registerVentasHandlers() {
                     },
                     { transaction: t },
                 )
-                // Decrementar stock del producto
+                // Decrement product stock
                 await Producto.decrement('stock', {
                     by: det.cantidad,
                     where: { id: det.producto_id },
@@ -35,16 +53,16 @@ function registerVentasHandlers() {
         }
     })
 
-    // Listar todas las ventas
-    ipcMain.handle('ventas:findAll', async (_event, { order } = {}) => {
+    // List all sales
+    ipcMain.handle('ventas:findAll', async (_event, opts: FindAllOptions = {}) => {
         return Venta.findAll({
-            order: order || [['fecha', 'DESC']],
+            order: opts.order ?? [['fecha', 'DESC']],
             raw: true,
         })
     })
 
-    // Obtener detalle completo de una venta (con productos)
-    ipcMain.handle('ventas:findById', async (_event, id) => {
+    // Get full sale details including line items and products
+    ipcMain.handle('ventas:findById', async (_event, id: number) => {
         const venta = await Venta.findByPk(id, {
             include: [
                 {
@@ -56,5 +74,3 @@ function registerVentasHandlers() {
         return venta ? venta.toJSON() : null
     })
 }
-
-module.exports = { registerVentasHandlers }

@@ -2,3 +2,8 @@
     background-color: #dbeafe !important;
     border-left: 3px solid #1e90ff;
 }
+
+.p-button:focus {
+    box-shadow: none !important;
+    outline: none !important;
+}

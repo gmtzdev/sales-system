@@ -12,94 +12,97 @@ import { Divider } from 'primereact/divider'
 import { InputTextarea } from 'primereact/inputtextarea'
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
 import { Badge } from 'primereact/badge'
-import Productos from './Productos'
 import './VentasNueva.css'
 
-const tabls = [
+interface TabItem {
+    key: string
+    label: string
+    icon: string
+}
+
+interface ProductoRow {
+    code: string
+    description: string
+    price: number
+    stock: number
+}
+
+interface CarritoItem {
+    code: string
+    nombre: string
+    precio_unitario: number
+    cantidad: number
+    subtotal: number
+    stock: number
+}
+
+const tabls: TabItem[] = [
     { key: 'catalogo', label: 'Catálogo', icon: 'pi pi-th-large' },
     { key: 'productos', label: 'Productos', icon: 'pi pi-box' }
 ]
 
-function VentasNueva() {
-    const toast = useRef(null)
-    const { user } = useAuth()
-    const [panelIzq, setPanelIzq] = useState('catalogo')
-    const [productos, setProductos] = useState([])
-    const [busqueda, setBusqueda] = useState('')
-    const [carrito, setCarrito] = useState([])
-    const [notas, setNotas] = useState('')
-    const [guardando, setGuardando] = useState(false)
-    const [tickets, setTickets] = useState(['Ticket #1', 'Ticket #2', 'Ticket #3',])
-    const [ticketActivo, setTicketActivo] = useState('Ticket #1')
-    const [carritoSeleccionado, setCarritoSeleccionado] = useState(null) // producto_id seleccionado
+function VentasNueva(): React.ReactElement {
+    const toast = useRef<Toast>(null)
+    const { user } = useAuth() as unknown as { user: { username: string } | null; login: (u: string, p: string) => boolean; logout: () => void }
+    const [panelIzq, setPanelIzq] = useState<string>('catalogo')
+    const [productos, setProductos] = useState<ProductoRow[]>([])
+
+    const [notas, setNotas] = useState<string>('')
+    const [guardando, setGuardando] = useState<boolean>(false)
+    const [tickets, setTickets] = useState<string[]>(['Ticket #1', 'Ticket #2', 'Ticket #3',])
+    const [ticketActivo, setTicketActivo] = useState<string>('Ticket #1')
+    const [carritoSeleccionado, setCarritoSeleccionado] = useState<string | null>(null)
 
     useEffect(() => {
-        loadProductos()
+        // loadProductos()
     }, [])
 
 
-
-    async function searchProduct() {
+    // Barra de búsqueda de productos
+    const [busqueda, setBusqueda] = useState<string>('')
+    async function searchProduct(): Promise<void> {
         const q = busqueda.trim()
         if (!q) return
+
+        console.log(`Buscando producto con "${q}"...`)
 
         try {
             const resultados = await window.electronAPI.productos.findAll({
                 where: { code: q },
-            })
+            }) as ProductoRow[]
+
+            console.log("Resultados de búsqueda:", resultados)
 
             // Coincidencia exacta primero, luego parcial
-            let encontrado = resultados.find(
-                p => p.code.toLowerCase() === q.toLowerCase()
-            ) ?? resultados[0]
+            const encontrado: ProductoRow | undefined = resultados.find(p => p.code.toLowerCase() === q.toLowerCase()) ?? resultados[0]
 
             if (!encontrado) {
-                toast.current.show({ severity: 'warn', summary: 'No encontrado', detail: `No hay productos con "${q}"` })
+                toast.current?.show({ severity: 'warn', summary: 'No encontrado', detail: `No hay productos con "${q}"` })
                 return
             }
 
+            console.log("Producto encontrado:", encontrado)
             agregarAlCarrito(encontrado)
             setBusqueda('')
         } catch (err) {
-            toast.current.show({ severity: 'error', summary: 'Error', detail: err.message })
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-    async function loadProductos() {
-        try {
-            const rows = await window.electronAPI.productos.findAll({
-                order: [['code', 'ASC']],
-            })
-            setProductos(rows)
-        } catch (err) {
-            toast.current.show({ severity: 'error', summary: 'Error', detail: err.message })
-        }
-    }
 
     // ── Carrito ──────────────────────────────────────────────────
-    function agregarAlCarrito(producto) {
+    const [carrito, setCarrito] = useState<CarritoItem[]>([])
+    function agregarAlCarrito(producto: ProductoRow): void {
         if (producto.stock <= 0) {
-            toast.current.show({ severity: 'warn', summary: 'Sin stock', detail: `"${producto.description}" no tiene stock disponible` })
+            toast.current?.show({ severity: 'warn', summary: 'Sin stock', detail: `"${producto.description}" no tiene stock disponible` })
             return
         }
         setCarrito(prev => {
-            const idx = prev.findIndex(i => i.producto_id === producto.id)
+            const idx = prev.findIndex(i => i.code === producto.code)
             if (idx >= 0) {
                 const item = prev[idx]
                 if (item.cantidad >= producto.stock) {
-                    toast.current.show({ severity: 'warn', summary: 'Stock insuficiente', detail: `Máximo ${producto.stock} unidades` })
+                    toast.current?.show({ severity: 'warn', summary: 'Stock insuficiente', detail: `Máximo ${producto.stock} unidades` })
                     return prev
                 }
                 const updated = [...prev]
@@ -110,67 +113,98 @@ function VentasNueva() {
                 }
                 return updated
             }
-            const nuevo = {
-                producto_id: producto.id,
+            const nuevo: CarritoItem = {
+                code: producto.code,
                 nombre: producto.description,
                 precio_unitario: Number(producto.price),
                 cantidad: 1,
                 subtotal: Number(producto.price),
                 stock: producto.stock,
             }
-            setCarritoSeleccionado(producto.id)
+            setCarritoSeleccionado(producto.code)
             return [...prev, nuevo]
         })
     }
 
-    function cambiarCantidad(producto_id, nuevaCantidad) {
+    function cambiarCantidad(producto_code: string, nuevaCantidad: number | null): void {
         setCarrito(prev =>
             prev.map(item => {
-                if (item.producto_id !== producto_id) return item
+                if (item.code !== producto_code) return item
                 const cant = Math.max(1, Math.min(nuevaCantidad ?? 1, item.stock))
                 return { ...item, cantidad: cant, subtotal: Number((cant * item.precio_unitario).toFixed(2)) }
             }),
         )
     }
 
-    function quitarDelCarrito(producto_id) {
-        setCarrito(prev => prev.filter(i => i.producto_id !== producto_id))
+    function quitarDelCarrito(producto_code: string): void {
+        setCarrito(prev => prev.filter(i => i.code !== producto_code))
     }
 
-    function limpiarCarrito() {
+    function limpiarCarrito(): void {
         setCarrito([])
         setNotas('')
         setCarritoSeleccionado(null)
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // async function loadProductos(): Promise<void> {
+    //     try {
+    //         const rows = await window.electronAPI.productos.findAll({
+    //             order: [['code', 'ASC']],
+    //         }) as ProductoRow[]
+    //         setProductos(rows)
+    //     } catch (err) {
+    //         toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
+    //     }
+    // }
+
+
+
     // ── Navegación teclado en carrito ──────────────────────────
     useEffect(() => {
-        function handleKey(e) {
-            // Ignorar si el foco está en un input/textarea
-            // if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return
+        function handleKey(e: KeyboardEvent): void {
             if (carrito.length === 0) return
 
             if (e.key === 'ArrowDown') {
                 e.preventDefault()
                 setCarritoSeleccionado(prev => {
-                    const idx = carrito.findIndex(i => i.producto_id === prev)
-                    return carrito[Math.min(idx + 1, carrito.length - 1)].producto_id
+                    const idx = carrito.findIndex(i => i.code === prev)
+                    return carrito[Math.min(idx + 1, carrito.length - 1)].code
                 })
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault()
                 setCarritoSeleccionado(prev => {
-                    const idx = carrito.findIndex(i => i.producto_id === prev)
-                    return carrito[Math.max(idx - 1, 0)].producto_id
+                    const idx = carrito.findIndex(i => i.code === prev)
+                    return carrito[Math.max(idx - 1, 0)].code
                 })
             } else if ((e.key === '+' || e.key === '=') && carritoSeleccionado) {
                 e.preventDefault()
                 cambiarCantidad(carritoSeleccionado,
-                    (carrito.find(i => i.producto_id === carritoSeleccionado)?.cantidad ?? 0) + 1
+                    (carrito.find(i => i.code === carritoSeleccionado)?.cantidad ?? 0) + 1
                 )
             } else if (e.key === '-' && carritoSeleccionado) {
                 e.preventDefault()
                 cambiarCantidad(carritoSeleccionado,
-                    (carrito.find(i => i.producto_id === carritoSeleccionado)?.cantidad ?? 1) - 1
+                    (carrito.find(i => i.code === carritoSeleccionado)?.cantidad ?? 1) - 1
                 )
             }
         }
@@ -182,9 +216,9 @@ function VentasNueva() {
     const total = carrito.reduce((acc, i) => acc + i.subtotal, 0)
 
     // ── Completar venta ──────────────────────────────────────────
-    async function completarVenta() {
+    async function completarVenta(): Promise<void> {
         if (carrito.length === 0) {
-            toast.current.show({ severity: 'warn', summary: 'Carrito vacío', detail: 'Agrega al menos un producto' })
+            toast.current?.show({ severity: 'warn', summary: 'Carrito vacío', detail: 'Agrega al menos un producto' })
             return
         }
         setGuardando(true)
@@ -196,23 +230,23 @@ function VentasNueva() {
                     vendedor: user?.username ?? '',
                 },
                 detalles: carrito.map(i => ({
-                    producto_id: i.producto_id,
+                    code: i.code,
                     cantidad: i.cantidad,
                     precio_unitario: i.precio_unitario,
                     subtotal: i.subtotal,
                 })),
             })
-            toast.current.show({ severity: 'success', summary: 'Venta completada', detail: `Total: $${total.toFixed(2)}` })
+            toast.current?.show({ severity: 'success', summary: 'Venta completada', detail: `Total: $${total.toFixed(2)}` })
             limpiarCarrito()
-            loadProductos()
+            // loadProductos()
         } catch (err) {
-            toast.current.show({ severity: 'error', summary: 'Error', detail: err.message })
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
         } finally {
             setGuardando(false)
         }
     }
 
-    function pedirConfirmacion() {
+    function pedirConfirmacion(): void {
         confirmDialog({
             message: `¿Confirmar venta por $${total.toFixed(2)}?`,
             header: 'Confirmar venta',
@@ -229,10 +263,10 @@ function VentasNueva() {
     })
 
     // ── Templates tabla carrito ──────────────────────────────────
-    const cantidadTemplate = (row) => (
+    const cantidadTemplate = (row: CarritoItem) => (
         <InputNumber
             value={row.cantidad}
-            onValueChange={e => cambiarCantidad(row.producto_id, e.value)}
+            onValueChange={e => cambiarCantidad(row.code, e.value ?? null)}
             min={1}
             max={row.stock}
             showButtons
@@ -245,17 +279,15 @@ function VentasNueva() {
             style={{ width: '7rem' }}
         />
     )
-
-    const subtotalTemplate = (row) => `$${row.subtotal.toFixed(2)}`
-    const precioTemplate = (row) => `$${Number(row.precio_unitario).toFixed(2)}`
-
-    const quitarTemplate = (row) => (
+    const subtotalTemplate = (row: CarritoItem) => `$${row.subtotal.toFixed(2)}`
+    const precioTemplate = (row: CarritoItem) => `$${Number(row.precio_unitario).toFixed(2)}`
+    const quitarTemplate = (row: CarritoItem) => (
         <Button
             icon="pi pi-times"
             rounded
             text
             severity="danger"
-            onClick={() => quitarDelCarrito(row.producto_id)}
+            onClick={() => quitarDelCarrito(row.code)}
         />
     )
 
@@ -267,7 +299,10 @@ function VentasNueva() {
 
                 {/* Nombre del Ticket actual */}
                 <div>
-                    Venta de productos - ${ }
+                    <h3 style={{ margin: 0, fontWeight: 700, color: '#1a1a2e' }}>
+                        <i className="pi pi-shopping-cart" style={{ marginRight: '0.5rem', color: '#1e90ff' }} />
+                        Venta de productos - Ticket #1
+                    </h3>
                 </div>
 
                 {/* Barra de búsqueda y botón de agregar producto */}
@@ -317,6 +352,7 @@ function VentasNueva() {
                                     borderBottom: panelIzq === tab.key ? '2px solid #1e90ff' : '2px solid transparent',
                                     borderRadius: 0,
                                     marginBottom: '-0.52rem',
+                                    outline: 'none',
                                 }}
                                 onClick={() => setPanelIzq(tab.key)}
                             />
@@ -481,14 +517,14 @@ function VentasNueva() {
                                 El carrito está vacío
                             </div>
                         ) : (
-                            <DataTable
+                            <DataTable<CarritoItem[]>
                                 value={carrito}
                                 size="small"
                                 showGridlines={false}
-                                rowClassName={row =>
-                                    row.producto_id === carritoSeleccionado ? 'carrito-row-selected' : ''
+                                rowClassName={(row: CarritoItem) =>
+                                    row.code === carritoSeleccionado ? 'carrito-row-selected' : ''
                                 }
-                                onRowClick={e => setCarritoSeleccionado(e.data.producto_id)}
+                                onRowClick={e => setCarritoSeleccionado((e.data as CarritoItem).code)}
                                 style={{ cursor: 'pointer' }}
                             >
                                 <Column field="nombre" header="Producto" style={{ minWidth: '8rem' }} />
@@ -517,7 +553,7 @@ function VentasNueva() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexShrink: 0 }}>
                         <div>
                             <div>
-                                <span>4</span>
+                                <span>{carrito.length}</span>
                                 <span>Productos en la venta actual</span>
                             </div>
 
@@ -530,17 +566,17 @@ function VentasNueva() {
                                     label='F5 - Cambiar'
                                     size='small'
                                     text
-                                    raised ></Button>
+                                    raised />
                                 <Button
                                     label='F6 - Pendiente'
                                     size='small'
                                     text
-                                    raised ></Button>
+                                    raised />
                                 <Button
                                     label='Eliminar'
                                     size='small'
                                     text
-                                    raised ></Button>
+                                    raised />
                             </div>
                         </div>
 

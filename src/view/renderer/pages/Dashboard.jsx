@@ -6,8 +6,10 @@ import Productos from './Productos'
 import Usuarios from './Usuarios'
 import Suppliers from './admin/Suppliers'
 import Departaments from './admin/Departaments'
+import SalesResumen from './SalesResumen'
 
 const PAGES = [
+    { key: 'dashboard', label: 'Dashboard', icon: 'pi pi-home', component: <SalesResumen /> },
     { key: 'productos', label: 'Productos', icon: 'pi pi-box', component: <Productos /> },
     { key: 'usuarios', label: 'Usuarios', icon: 'pi pi-users', component: <Usuarios /> },
     { key: 'suppliers', label: 'Suppliers', icon: 'pi pi-truck', component: <Suppliers /> },
@@ -17,7 +19,7 @@ const PAGES = [
 function Dashboard() {
     const { user, logout } = useAuth()
     const navigate = useNavigate()
-    const [activePage, setActivePage] = useState('productos')
+    const [activePage, setActivePage] = useState('dashboard')
 
     function handleLogout() {
         logout()

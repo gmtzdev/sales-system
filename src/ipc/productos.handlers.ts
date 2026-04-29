@@ -1,35 +1,44 @@
 import { ipcMain } from 'electron'
 import type { Order, WhereOptions } from 'sequelize'
-import Producto, { type ProductoAttributes } from '../database/models/Producto'
+import Product, { type ProductAttributes } from '../database/models/Product'
 
 interface FindAllOptions {
-    where?: WhereOptions<ProductoAttributes>
+    where?: WhereOptions<ProductAttributes>
     order?: Order
     limit?: number
+    includeAssociations?: boolean
 }
 
 export function registerProductosHandlers(): void {
+    // Returns products with optional supplier/departament names joined
     ipcMain.handle('productos:findAll', async (_event, opts: FindAllOptions = {}) => {
-        const { where, order, limit } = opts
-        return Producto.findAll({ where, order, limit, raw: true })
+        const { where, order, limit, includeAssociations } = opts
+        const include = includeAssociations
+            ? [
+                { association: 'supplier', attributes: ['id', 'name'] },
+                { association: 'departament', attributes: ['id', 'name'] },
+            ]
+            : []
+        const rows = await Product.findAll({ where, order, limit, include })
+        return rows.map(r => r.toJSON())
     })
 
-    ipcMain.handle('productos:findById', async (_event, id: number) => {
-        return Producto.findByPk(id, { raw: true })
+    ipcMain.handle('productos:findByCode', async (_event, code: string) => {
+        return Product.findByPk(code, { raw: true })
     })
 
-    ipcMain.handle('productos:create', async (_event, data: Omit<ProductoAttributes, 'id'>) => {
-        const producto = await Producto.create(data)
-        return producto.toJSON()
+    ipcMain.handle('productos:create', async (_event, data: Omit<ProductAttributes, never>) => {
+        const product = await Product.create(data)
+        return product.toJSON()
     })
 
-    ipcMain.handle('productos:update', async (_event, id: number, data: Partial<ProductoAttributes>) => {
-        const [affectedRows] = await Producto.update(data, { where: { id } })
+    ipcMain.handle('productos:update', async (_event, code: string, data: Partial<ProductAttributes>) => {
+        const [affectedRows] = await Product.update(data, { where: { code } })
         return { affectedRows }
     })
 
-    ipcMain.handle('productos:delete', async (_event, id: number) => {
-        const affectedRows = await Producto.destroy({ where: { id } })
+    ipcMain.handle('productos:delete', async (_event, code: string) => {
+        const affectedRows = await Product.destroy({ where: { code } })
         return { affectedRows }
     })
 }

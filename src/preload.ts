@@ -21,13 +21,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
         }
     },
 
-    // Products API
+    // Products API (code is the primary key)
     productos: {
         findAll: (opts?: IpcOptions) => ipcRenderer.invoke('productos:findAll', opts),
-        findById: (id: number) => ipcRenderer.invoke('productos:findById', id),
+        findByCode: (code: string) => ipcRenderer.invoke('productos:findByCode', code),
         create: (data: IpcOptions) => ipcRenderer.invoke('productos:create', data),
-        update: (id: number, data: IpcOptions) => ipcRenderer.invoke('productos:update', id, data),
-        delete: (id: number) => ipcRenderer.invoke('productos:delete', id),
+        update: (code: string, data: IpcOptions) => ipcRenderer.invoke('productos:update', code, data),
+        delete: (code: string) => ipcRenderer.invoke('productos:delete', code),
     },
 
     // Users API

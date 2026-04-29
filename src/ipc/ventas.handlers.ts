@@ -4,7 +4,7 @@ import { sequelize, Venta, VentaDetalle, Producto } from '../database/models'
 import type { VentaAttributes } from '../database/models/Venta'
 
 interface VentaDetallePayload {
-    producto_id: number
+    producto_id: string
     cantidad: number
     precio_unitario: number
     subtotal: number
@@ -37,10 +37,10 @@ export function registerVentasHandlers(): void {
                     },
                     { transaction: t },
                 )
-                // Decrement product stock
-                await Producto.decrement('stock', {
+                // Decrement product inventory
+                await Producto.decrement('dinventary', {
                     by: det.cantidad,
-                    where: { id: det.producto_id },
+                    where: { code: det.producto_id },
                     transaction: t,
                 })
             }

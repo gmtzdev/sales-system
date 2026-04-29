@@ -5,7 +5,7 @@ export interface VentaDetalleAttributes {
     id: number
     // Foreign keys — defined explicitly for proper TypeScript support
     venta_id: number
-    producto_id: number
+    producto_id: string
     cantidad: number
     precio_unitario: number
     subtotal: number
@@ -17,7 +17,7 @@ class VentaDetalle extends Model<VentaDetalleAttributes, VentaDetalleCreationAtt
     implements VentaDetalleAttributes {
     declare id: number
     declare venta_id: number
-    declare producto_id: number
+    declare producto_id: string
     declare cantidad: number
     declare precio_unitario: number
     declare subtotal: number
@@ -27,7 +27,7 @@ VentaDetalle.init(
     {
         id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
         venta_id: { type: DataTypes.INTEGER, allowNull: false },
-        producto_id: { type: DataTypes.INTEGER, allowNull: false },
+        producto_id: { type: DataTypes.STRING(150), allowNull: false },
         cantidad: {
             type: DataTypes.INTEGER,
             allowNull: false,

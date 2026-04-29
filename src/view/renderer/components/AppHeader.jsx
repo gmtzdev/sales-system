@@ -4,12 +4,12 @@ import { useAuth } from '../context/AuthContext'
 import { Button } from 'primereact/button'
 
 const NAV_ITEMS = [
-    { key: 'ventas', label: 'Ventas', icon: 'pi pi-shopping-cart', path: '/ventas/index', shortcut: 'F1' },
-    { key: 'clientes', label: 'Clientes', icon: 'pi pi-users', path: '/ventas/historial', shortcut: 'F2' },
-    { key: 'productos', label: 'Productos', icon: 'pi pi-box', path: '/productos', shortcut: 'F3' },
-    { key: 'inventario', label: 'Inventario', icon: 'pi pi-warehouse', path: '/inventario', shortcut: 'F4' },
-    { key: 'corte', label: 'Corte', icon: 'pi pi-calculator', path: '/corte', shortcut: 'F5' },
-    { key: 'configuracion', label: 'Configuración', icon: 'pi pi-cog', path: '/configuracion', shortcut: 'F6' },
+    { key: 'ventas', label: 'Ventas', icon: 'pi pi-shopping-cart', path: '/sales/index', shortcut: 'F1' },
+    { key: 'clientes', label: 'Clientes', icon: 'pi pi-users', path: '/sales/historial', shortcut: 'F2' },
+    { key: 'productos', label: 'Productos', icon: 'pi pi-box', path: '/sales/productos', shortcut: 'F3' },
+    { key: 'inventario', label: 'Inventario', icon: 'pi pi-warehouse', path: '/sales/inventory', shortcut: 'F4' },
+    { key: 'corte', label: 'Corte', icon: 'pi pi-calculator', path: '/sales/corte', shortcut: 'F5' },
+    { key: 'configuracion', label: 'Configuración', icon: 'pi pi-cog', path: '/sales/configuracion', shortcut: 'F6' },
 ]
 
 /**

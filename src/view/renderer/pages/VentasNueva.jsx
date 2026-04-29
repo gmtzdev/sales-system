@@ -45,12 +45,12 @@ function VentasNueva() {
 
         try {
             const resultados = await window.electronAPI.productos.findAll({
-                where: { nombre: q },
+                where: { code: q },
             })
 
             // Coincidencia exacta primero, luego parcial
             let encontrado = resultados.find(
-                p => p.nombre.toLowerCase() === q.toLowerCase()
+                p => p.code.toLowerCase() === q.toLowerCase()
             ) ?? resultados[0]
 
             if (!encontrado) {
@@ -80,7 +80,7 @@ function VentasNueva() {
     async function loadProductos() {
         try {
             const rows = await window.electronAPI.productos.findAll({
-                order: [['nombre', 'ASC']],
+                order: [['code', 'ASC']],
             })
             setProductos(rows)
         } catch (err) {
@@ -91,7 +91,7 @@ function VentasNueva() {
     // ── Carrito ──────────────────────────────────────────────────
     function agregarAlCarrito(producto) {
         if (producto.stock <= 0) {
-            toast.current.show({ severity: 'warn', summary: 'Sin stock', detail: `"${producto.nombre}" no tiene stock disponible` })
+            toast.current.show({ severity: 'warn', summary: 'Sin stock', detail: `"${producto.description}" no tiene stock disponible` })
             return
         }
         setCarrito(prev => {
@@ -112,10 +112,10 @@ function VentasNueva() {
             }
             const nuevo = {
                 producto_id: producto.id,
-                nombre: producto.nombre,
-                precio_unitario: Number(producto.precio),
+                nombre: producto.description,
+                precio_unitario: Number(producto.price),
                 cantidad: 1,
-                subtotal: Number(producto.precio),
+                subtotal: Number(producto.price),
                 stock: producto.stock,
             }
             setCarritoSeleccionado(producto.id)
@@ -225,7 +225,7 @@ function VentasNueva() {
 
     const productosFiltrados = productos.filter(p => {
         const q = busqueda.toLowerCase()
-        return p.nombre.toLowerCase().includes(q) || (p.descripcion ?? '').toLowerCase().includes(q)
+        return p.code.toLowerCase().includes(q) || (p.description ?? '').toLowerCase().includes(q)
     })
 
     // ── Templates tabla carrito ──────────────────────────────────

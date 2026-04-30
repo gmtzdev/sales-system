@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Button } from 'primereact/button'
 import Productos from './Productos'
-import Usuarios from './Usuarios'
+import Users from './Users'
 import Suppliers from './admin/Suppliers'
 import Departaments from './admin/Departaments'
 import SalesResumen from './SalesResumen'
@@ -11,7 +11,7 @@ import SalesResumen from './SalesResumen'
 const PAGES = [
     { key: 'dashboard', label: 'Dashboard', icon: 'pi pi-home', component: <SalesResumen /> },
     { key: 'productos', label: 'Productos', icon: 'pi pi-box', component: <Productos /> },
-    { key: 'usuarios', label: 'Usuarios', icon: 'pi pi-users', component: <Usuarios /> },
+    { key: 'users', label: 'Usuarios', icon: 'pi pi-users', component: <Users /> },
     { key: 'suppliers', label: 'Suppliers', icon: 'pi pi-truck', component: <Suppliers /> },
     { key: 'departaments', label: 'Departments', icon: 'pi pi-sitemap', component: <Departaments /> },
 ]

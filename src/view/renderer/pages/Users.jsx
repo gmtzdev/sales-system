@@ -18,7 +18,7 @@ const ROLES = [
     { label: 'Vendedor', value: 'vendedor' },
 ]
 
-function Usuarios() {
+function Users() {
     const toast = useRef(null)
     const [usuarios, setUsuarios] = useState([])
     const [loading, setLoading] = useState(false)
@@ -35,7 +35,7 @@ function Usuarios() {
     async function loadUsuarios() {
         setLoading(true)
         try {
-            const rows = await window.electronAPI.usuarios.findAll({
+            const rows = await window.electronAPI.users.findAll({
                 order: [['username', 'ASC']],
             })
             setUsuarios(rows)
@@ -68,7 +68,7 @@ function Usuarios() {
         setSaving(true)
         try {
             if (isEditing) {
-                await window.electronAPI.usuarios.update(usuario.id, {
+                await window.electronAPI.users.update(usuario.id, {
                     username: usuario.username,
                     nombre: usuario.nombre,
                     rol: usuario.rol,
@@ -77,7 +77,7 @@ function Usuarios() {
                 })
                 toast.current.show({ severity: 'success', summary: 'Actualizado', detail: usuario.username })
             } else {
-                await window.electronAPI.usuarios.create({
+                await window.electronAPI.users.create({
                     username: usuario.username,
                     password: usuario.password,
                     nombre: usuario.nombre,
@@ -109,7 +109,7 @@ function Usuarios() {
 
     async function deleteUsuario(row) {
         try {
-            await window.electronAPI.usuarios.delete(row.id)
+            await window.electronAPI.users.delete(row.id)
             toast.current.show({ severity: 'info', summary: 'Eliminado', detail: row.username })
             loadUsuarios()
         } catch (err) {
@@ -261,4 +261,4 @@ function Usuarios() {
     )
 }
 
-export default Usuarios
+export default Users

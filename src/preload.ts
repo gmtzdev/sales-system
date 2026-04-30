@@ -31,12 +31,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
 
     // Users API
-    usuarios: {
-        findAll: (opts?: IpcOptions) => ipcRenderer.invoke('usuarios:findAll', opts),
-        findById: (id: number) => ipcRenderer.invoke('usuarios:findById', id),
-        create: (data: IpcOptions) => ipcRenderer.invoke('usuarios:create', data),
-        update: (id: number, data: IpcOptions) => ipcRenderer.invoke('usuarios:update', id, data),
-        delete: (id: number) => ipcRenderer.invoke('usuarios:delete', id),
+    users: {
+        findAll: (opts?: IpcOptions) => ipcRenderer.invoke('users:findAll', opts),
+        findById: (id: number) => ipcRenderer.invoke('users:findById', id),
+        create: (data: IpcOptions) => ipcRenderer.invoke('users:create', data),
+        update: (id: number, data: IpcOptions) => ipcRenderer.invoke('users:update', id, data),
+        delete: (id: number) => ipcRenderer.invoke('users:delete', id),
     },
 
     // Sales API

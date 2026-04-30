@@ -2,7 +2,7 @@ import { app, BrowserWindow } from 'electron'
 import path from 'path'
 import { initDatabase, closeDatabase } from './database/models'
 import { registerProductosHandlers } from './ipc/productos.handlers'
-import { registerUsuariosHandlers } from './ipc/usuarios.handlers'
+import { registerUsersHandlers } from './ipc/users.handlers'
 import { registerSaleTicketHandlers } from './ipc/saleticket.handlers'
 import { registerSuppliersHandlers } from './ipc/suppliers.handlers'
 import { registerDepartamentsHandlers } from './ipc/departaments.handlers'
@@ -11,7 +11,7 @@ const isDev: boolean = !app.isPackaged
 
 // Register all IPC handlers before creating any window
 registerProductosHandlers()
-registerUsuariosHandlers()
+registerUsersHandlers()
 registerSaleTicketHandlers()
 registerSuppliersHandlers()
 registerDepartamentsHandlers()

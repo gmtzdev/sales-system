@@ -1,20 +1,20 @@
 import { ipcMain } from 'electron'
 import bcrypt from 'bcryptjs'
 import type { Order, WhereOptions } from 'sequelize'
-import Usuario, { type UsuarioAttributes } from '../database/models/Usuario'
+import Usuario, { type UserAttributes } from '../database/models/User'
 
 const SALT_ROUNDS = 10
 
 interface FindAllOptions {
-    where?: WhereOptions<UsuarioAttributes>
+    where?: WhereOptions<UserAttributes>
     order?: Order
 }
 
 // Data shape for creating a new user (password is always required on create)
-type CreateUsuarioData = Omit<UsuarioAttributes, 'id'>
+type CreateUserData = Omit<UserAttributes, 'id'>
 
-export function registerUsuariosHandlers(): void {
-    ipcMain.handle('usuarios:findAll', async (_event, opts: FindAllOptions = {}) => {
+export function registerUsersHandlers(): void {
+    ipcMain.handle('users:findAll', async (_event, opts: FindAllOptions = {}) => {
         const { where, order } = opts
         return Usuario.findAll({
             where,
@@ -24,14 +24,14 @@ export function registerUsuariosHandlers(): void {
         })
     })
 
-    ipcMain.handle('usuarios:findById', async (_event, id: number) => {
+    ipcMain.handle('users:findById', async (_event, id: number) => {
         return Usuario.findByPk(id, {
             attributes: { exclude: ['password'] },
             raw: true,
         })
     })
 
-    ipcMain.handle('usuarios:create', async (_event, data: CreateUsuarioData) => {
+    ipcMain.handle('users:create', async (_event, data: CreateUserData) => {
         const hashed = await bcrypt.hash(data.password, SALT_ROUNDS)
         const usuario = await Usuario.create({ ...data, password: hashed })
         // Strip password from the returned object
@@ -39,8 +39,8 @@ export function registerUsuariosHandlers(): void {
         return safe
     })
 
-    ipcMain.handle('usuarios:update', async (_event, id: number, data: Partial<UsuarioAttributes>) => {
-        const payload: Partial<UsuarioAttributes> = { ...data }
+    ipcMain.handle('users:update', async (_event, id: number, data: Partial<UserAttributes>) => {
+        const payload: Partial<UserAttributes> = { ...data }
         if (payload.password) {
             payload.password = await bcrypt.hash(payload.password, SALT_ROUNDS)
         } else {
@@ -50,7 +50,7 @@ export function registerUsuariosHandlers(): void {
         return { affectedRows }
     })
 
-    ipcMain.handle('usuarios:delete', async (_event, id: number) => {
+    ipcMain.handle('users:delete', async (_event, id: number) => {
         const affectedRows = await Usuario.destroy({ where: { id } })
         return { affectedRows }
     })

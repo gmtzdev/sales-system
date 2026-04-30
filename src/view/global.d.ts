@@ -16,7 +16,7 @@ interface ElectronAPI {
         update: (code: string, data: IpcOptions) => Promise<unknown>
         delete: (code: string) => Promise<unknown>
     }
-    usuarios: {
+    users: {
         findAll: (opts?: IpcOptions) => Promise<unknown[]>
         findById: (id: number) => Promise<unknown>
         create: (data: IpcOptions) => Promise<unknown>

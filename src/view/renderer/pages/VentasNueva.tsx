@@ -23,17 +23,30 @@ interface TabItem {
 interface ProductoRow {
     code: string
     description: string
-    price: number
-    stock: number
+    tsale: string
+    pcost: number
+    psale: number
+    dept: number
+    provid: number
+    umeas: number
+    wholeSale: number
+    ipriority: number
+    dinventary: number
+    dinventarymin: number
+    dinventarymax: number
+    profitporcentage: number
+    components: string
+    taxes: string
 }
 
-interface CarritoItem {
+interface CarItem {
     code: string
-    nombre: string
-    precio_unitario: number
-    cantidad: number
+    description: string
+    psale: number
+    amount: number
     subtotal: number
     stock: number
+    tsale: string
 }
 
 const tabls: TabItem[] = [
@@ -64,25 +77,18 @@ function VentasNueva(): React.ReactElement {
         const q = busqueda.trim()
         if (!q) return
 
-        console.log(`Buscando producto con "${q}"...`)
-
         try {
-            const resultados = await window.electronAPI.productos.findAll({
-                where: { code: q },
-            }) as ProductoRow[]
-
-            console.log("Resultados de búsqueda:", resultados)
+            const result = await window.electronAPI.productos.findByCode(q) as ProductoRow | null
 
             // Coincidencia exacta primero, luego parcial
-            const encontrado: ProductoRow | undefined = resultados.find(p => p.code.toLowerCase() === q.toLowerCase()) ?? resultados[0]
+            const found: ProductoRow | undefined | null = result;
 
-            if (!encontrado) {
+            if (!found) {
                 toast.current?.show({ severity: 'warn', summary: 'No encontrado', detail: `No hay productos con "${q}"` })
                 return
             }
 
-            console.log("Producto encontrado:", encontrado)
-            agregarAlCarrito(encontrado)
+            agregarAlCarrito(found)
             setBusqueda('')
         } catch (err) {
             toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
@@ -91,9 +97,9 @@ function VentasNueva(): React.ReactElement {
 
 
     // ── Carrito ──────────────────────────────────────────────────
-    const [carrito, setCarrito] = useState<CarritoItem[]>([])
+    const [carrito, setCarrito] = useState<CarItem[]>([])
     function agregarAlCarrito(producto: ProductoRow): void {
-        if (producto.stock <= 0) {
+        if (producto.dinventary <= 0) {
             toast.current?.show({ severity: 'warn', summary: 'Sin stock', detail: `"${producto.description}" no tiene stock disponible` })
             return
         }
@@ -101,25 +107,26 @@ function VentasNueva(): React.ReactElement {
             const idx = prev.findIndex(i => i.code === producto.code)
             if (idx >= 0) {
                 const item = prev[idx]
-                if (item.cantidad >= producto.stock) {
-                    toast.current?.show({ severity: 'warn', summary: 'Stock insuficiente', detail: `Máximo ${producto.stock} unidades` })
+                if (item.amount >= producto.dinventary) {
+                    toast.current?.show({ severity: 'warn', summary: 'Stock insuficiente', detail: `Máximo ${producto.dinventary} unidades` })
                     return prev
                 }
                 const updated = [...prev]
                 updated[idx] = {
                     ...item,
-                    cantidad: item.cantidad + 1,
-                    subtotal: Number(((item.cantidad + 1) * item.precio_unitario).toFixed(2)),
+                    amount: item.amount + 1,
+                    subtotal: Number(((item.amount + 1) * item.psale).toFixed(2)),
                 }
                 return updated
             }
-            const nuevo: CarritoItem = {
+            const nuevo: CarItem = {
                 code: producto.code,
-                nombre: producto.description,
-                precio_unitario: Number(producto.price),
-                cantidad: 1,
-                subtotal: Number(producto.price),
-                stock: producto.stock,
+                description: producto.description,
+                psale: Number(producto.psale),
+                amount: 1,
+                subtotal: Number(producto.psale),
+                stock: producto.dinventary,
+                tsale: producto.tsale,
             }
             setCarritoSeleccionado(producto.code)
             return [...prev, nuevo]
@@ -130,8 +137,13 @@ function VentasNueva(): React.ReactElement {
         setCarrito(prev =>
             prev.map(item => {
                 if (item.code !== producto_code) return item
-                const cant = Math.max(1, Math.min(nuevaCantidad ?? 1, item.stock))
-                return { ...item, cantidad: cant, subtotal: Number((cant * item.precio_unitario).toFixed(2)) }
+
+                if (item.tsale === 'U') {
+                    nuevaCantidad = Math.round(nuevaCantidad ?? 1)
+                }
+
+                const cant = Math.max(0.01, Math.min(nuevaCantidad ?? 1, item.stock))
+                return { ...item, amount: cant, subtotal: Number((Math.round(cant * item.psale * 2) / 2).toFixed(2)) }
             }),
         )
     }
@@ -199,12 +211,12 @@ function VentasNueva(): React.ReactElement {
             } else if ((e.key === '+' || e.key === '=') && carritoSeleccionado) {
                 e.preventDefault()
                 cambiarCantidad(carritoSeleccionado,
-                    (carrito.find(i => i.code === carritoSeleccionado)?.cantidad ?? 0) + 1
+                    (carrito.find(i => i.code === carritoSeleccionado)?.amount ?? 0) + 1
                 )
             } else if (e.key === '-' && carritoSeleccionado) {
                 e.preventDefault()
                 cambiarCantidad(carritoSeleccionado,
-                    (carrito.find(i => i.code === carritoSeleccionado)?.cantidad ?? 1) - 1
+                    (carrito.find(i => i.code === carritoSeleccionado)?.amount ?? 1) - 1
                 )
             }
         }
@@ -231,8 +243,8 @@ function VentasNueva(): React.ReactElement {
                 },
                 detalles: carrito.map(i => ({
                     code: i.code,
-                    cantidad: i.cantidad,
-                    precio_unitario: i.precio_unitario,
+                    cantidad: i.amount,
+                    psale: i.psale,
                     subtotal: i.subtotal,
                 })),
             })
@@ -263,11 +275,11 @@ function VentasNueva(): React.ReactElement {
     })
 
     // ── Templates tabla carrito ──────────────────────────────────
-    const cantidadTemplate = (row: CarritoItem) => (
+    const cantidadTemplate = (row: CarItem) => (
         <InputNumber
-            value={row.cantidad}
+            value={row.amount}
             onValueChange={e => cambiarCantidad(row.code, e.value ?? null)}
-            min={1}
+            min={0.01}
             max={row.stock}
             showButtons
             buttonLayout="horizontal"
@@ -275,13 +287,16 @@ function VentasNueva(): React.ReactElement {
             incrementButtonClassName="p-button-text p-button-sm"
             decrementButtonIcon="pi pi-minus"
             incrementButtonIcon="pi pi-plus"
-            inputStyle={{ width: '3rem', textAlign: 'center' }}
+            inputStyle={{ width: '3rem', textAlign: 'center', padding: '3px', fontSize: '14px' }}
             style={{ width: '7rem' }}
         />
     )
-    const subtotalTemplate = (row: CarritoItem) => `$${row.subtotal.toFixed(2)}`
-    const precioTemplate = (row: CarritoItem) => `$${Number(row.precio_unitario).toFixed(2)}`
-    const quitarTemplate = (row: CarritoItem) => (
+    const subtotalTemplate = (row: CarItem) => {
+        const rounded = Math.round(row.subtotal * 2) / 2
+        return `$${rounded.toFixed(2)}`
+    }
+    const precioTemplate = (row: CarItem) => `$${Number(row.psale).toFixed(2)}`
+    const quitarTemplate = (row: CarItem) => (
         <Button
             icon="pi pi-times"
             rounded
@@ -487,16 +502,19 @@ function VentasNueva(): React.ReactElement {
                     padding: '1rem',
                     overflow: 'hidden',
                     background: '#fff',
+                    height: '60vh'
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexShrink: 0 }}>
-                        <h3 style={{ margin: 0, fontWeight: 700, color: '#1a1a2e' }}>
+                        <h3 style={{ margin: 0, fontWeight: 700, color: '#1a1a2e', display: 'flex', alignItems: 'center' }}>
                             <i className="pi pi-shopping-cart" style={{ marginRight: '0.5rem', color: '#1e90ff' }} />
                             Carrito
-                            {carrito.length > 0 && (
-                                <span style={{ marginLeft: '0.5rem', fontSize: '0.85rem', color: '#888', fontWeight: 400 }}>
-                                    ({carrito.length} {carrito.length === 1 ? 'ítem' : 'ítems'})
-                                </span>
-                            )}
+                            {
+                                carrito.length > 0 && (
+                                    <span style={{ marginLeft: '0.5rem', fontSize: '0.85rem', color: '#888', fontWeight: 400 }}>
+                                        ({carrito.length} {carrito.length === 1 ? 'ítem' : 'ítems'})
+                                    </span>
+                                )
+                            }
                         </h3>
                         {carrito.length > 0 && (
                             <Button
@@ -517,26 +535,29 @@ function VentasNueva(): React.ReactElement {
                                 El carrito está vacío
                             </div>
                         ) : (
-                            <DataTable<CarritoItem[]>
+                            <DataTable<CarItem[]>
                                 value={carrito}
                                 size="small"
                                 showGridlines={false}
-                                rowClassName={(row: CarritoItem) =>
+                                rowClassName={(row: CarItem) =>
                                     row.code === carritoSeleccionado ? 'carrito-row-selected' : ''
                                 }
-                                onRowClick={e => setCarritoSeleccionado((e.data as CarritoItem).code)}
+                                onRowClick={e => setCarritoSeleccionado((e.data as CarItem).code)}
                                 style={{ cursor: 'pointer' }}
                             >
-                                <Column field="nombre" header="Producto" style={{ minWidth: '8rem' }} />
-                                <Column header="Precio" body={precioTemplate} style={{ width: '6rem', borderLeft: 'none' }} />
-                                <Column header="Cantidad" body={cantidadTemplate} style={{ width: '8rem', borderLeft: 'none' }} />
+                                <Column field='code' header="Código" style={{ width: '9rem' }} />
+                                <Column field="description" header="Producto" style={{ minWidth: '8rem', borderLeft: 'none' }} />
+                                <Column header="Precio venta" body={precioTemplate} style={{ width: '8rem', borderLeft: 'none' }} />
+                                <Column header="Cantidad" body={cantidadTemplate} style={{ width: '10rem', borderLeft: 'none' }} />
                                 <Column header="Subtotal" body={subtotalTemplate} style={{ width: '6rem', fontWeight: 600, borderLeft: 'none' }} />
-                                <Column body={quitarTemplate} style={{ width: '3rem', borderLeft: 'none' }} />
+                                <Column field='stock' header="Existencia" style={{ width: '6rem', borderLeft: 'none' }} />
+                                {/* <Column body={quitarTemplate} style={{ width: '3rem', borderLeft: 'none' }} /> */}
                             </DataTable>
                         )}
                     </div>
 
                     <Divider />
+                    {/* <Divider />
 
                     <div style={{ marginBottom: '0.75rem', flexShrink: 0 }}>
                         <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.3rem', color: '#555' }}>Notas (opcional)</label>
@@ -547,36 +568,53 @@ function VentasNueva(): React.ReactElement {
                             style={{ width: '100%', resize: 'none' }}
                             placeholder="Observaciones de la venta..."
                         />
-                    </div>
+                    </div> */}
 
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexShrink: 0 }}>
-                        <div>
-                            <div>
-                                <span>{carrito.length}</span>
-                                <span>Productos en la venta actual</span>
+                    <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', alignItems: 'center', marginBottom: '0.75rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div >
+                                <div style={{ fontSize: '15px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span style={{ fontSize: '23px' }}>{carrito.length}</span>
+                                    <span >Productos en la venta actual</span>
+                                </div>
+
+                                <div style={{
+                                    display: 'flex',
+                                    gap: '0.5rem',
+                                    marginTop: '0.5rem',
+                                }}>
+                                    <Button
+                                        label='F5 - Cambiar'
+                                        size='small'
+                                        text
+                                        raised />
+                                    <Button
+                                        label='F6 - Pendiente'
+                                        size='small'
+                                        text
+                                        raised />
+                                    <Button
+                                        label='Eliminar'
+                                        size='small'
+                                        text
+                                        raised />
+                                </div>
                             </div>
 
                             <div style={{
-                                display: 'flex',
-                                gap: '0.5rem',
-                                marginTop: '0.5rem',
+                                width: '12rem', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'
                             }}>
                                 <Button
-                                    label='F5 - Cambiar'
-                                    size='small'
-                                    text
-                                    raised />
-                                <Button
-                                    label='F6 - Pendiente'
-                                    size='small'
-                                    text
-                                    raised />
-                                <Button
-                                    label='Eliminar'
-                                    size='small'
-                                    text
-                                    raised />
+                                    label="Completar venta"
+                                    icon="pi pi-check"
+                                    size="small"
+                                    raised
+                                    style={{ width: '11rem', height: '3rem' }}
+                                    disabled={carrito.length === 0 || guardando}
+                                    loading={guardando}
+                                    onClick={pedirConfirmacion}
+                                />
                             </div>
                         </div>
 
@@ -587,9 +625,6 @@ function VentasNueva(): React.ReactElement {
                             background: '#f4f6f9',
                             borderRadius: '8px',
                             padding: '0.75rem 1rem',
-                            marginBottom: '0.75rem',
-                            flexShrink: 0,
-                            width: '80%',
                         }}>
                             <span style={{ fontSize: '1rem', fontWeight: 600, color: '#555' }}>Total</span>
                             <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1a1a2e' }}>
@@ -597,39 +632,29 @@ function VentasNueva(): React.ReactElement {
                             </span>
                         </div>
                     </div>
-
-                    <Button
-                        label="Completar venta"
-                        icon="pi pi-check"
-                        size="large"
-                        style={{ width: '100%', flexShrink: 0 }}
-                        disabled={carrito.length === 0 || guardando}
-                        loading={guardando}
-                        onClick={pedirConfirmacion}
-                    />
                 </div>
 
                 {/* Info */}
-                <footer>
-                    <div>
-                        <div>
+                <footer className='footer'>
+                    <div className='last-sale-info'>
+                        <div className='sale-info'>
                             <span>Total:</span>
                             <span>$5</span>
                         </div>
-                        <div>
-                            <span>Total:</span>
+                        <div className='sale-info'>
+                            <span>Pagó con:</span>
                             <span>$5</span>
                         </div>
-                        <div>
-                            <span>Total:</span>
-                            <span>$5</span>
+                        <div className='sale-info'>
+                            <span>Cambio:</span>
+                            <span>$0</span>
                         </div>
-                        <Button label="c" icon="pi pi-check" size="small" text raised />
+                        <Button icon="pi pi-check" size="small" text raised />
                     </div>
 
                     <div>
                         <Button label='Reimprimir ultimo ticket' icon="pi pi-print" size="small" text raised />
-                        <Button label='Ventas del día y Devoluciones' icon="pi pi-print" size="small" text raised />
+                        <Button label='Ventas del día y Devoluciones' icon="pi pi-calendar" size="small" text raised />
                     </div>
                 </footer>
             </div >

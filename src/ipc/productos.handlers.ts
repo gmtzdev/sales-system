@@ -24,7 +24,8 @@ export function registerProductosHandlers(): void {
     })
 
     ipcMain.handle('productos:findByCode', async (_event, code: string) => {
-        return Product.findByPk(code, { raw: true })
+        const result = await Product.findByPk(code, { raw: true });
+        return result;
     })
 
     ipcMain.handle('productos:create', async (_event, data: Omit<ProductAttributes, never>) => {

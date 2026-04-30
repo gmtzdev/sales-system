@@ -60,11 +60,13 @@ Product.init(
         pcost: {
             type: DataTypes.DECIMAL(10, 2),
             defaultValue: 0,
+            get() { const v = this.getDataValue('pcost'); return v === null ? null : parseFloat(v as unknown as string) },
             validate: { min: { args: [0], msg: 'El costo no puede ser negativo' } },
         },
         psale: {
             type: DataTypes.DECIMAL(10, 2),
             defaultValue: 0,
+            get() { const v = this.getDataValue('psale'); return v === null ? null : parseFloat(v as unknown as string) },
             validate: { min: { args: [0], msg: 'El precio de venta no puede ser negativo' } },
         },
         // FK → departaments.id
@@ -76,17 +78,19 @@ Product.init(
         wholeSale: {
             type: DataTypes.DECIMAL(10, 2),
             defaultValue: 0,
+            get() { const v = this.getDataValue('wholeSale'); return v === null ? null : parseFloat(v as unknown as string) },
             validate: { min: { args: [0], msg: 'El precio mayoreo no puede ser negativo' } },
         },
         ipriority: { type: DataTypes.INTEGER, defaultValue: 0 },
         dinventary: {
             type: DataTypes.DECIMAL(10, 2),
             defaultValue: 0,
+            get() { const v = this.getDataValue('dinventary'); return v === null ? null : parseFloat(v as unknown as string) },
             validate: { min: { args: [0], msg: 'El inventario no puede ser negativo' } },
         },
-        dinventarymin: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
-        dinventarymax: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
-        profitporcentage: { type: DataTypes.DECIMAL(5, 2), defaultValue: 0 },
+        dinventarymin: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0, get() { const v = this.getDataValue('dinventarymin'); return v === null ? null : parseFloat(v as unknown as string) } },
+        dinventarymax: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0, get() { const v = this.getDataValue('dinventarymax'); return v === null ? null : parseFloat(v as unknown as string) } },
+        profitporcentage: { type: DataTypes.DECIMAL(5, 2), defaultValue: 0, get() { const v = this.getDataValue('profitporcentage'); return v === null ? null : parseFloat(v as unknown as string) } },
         // JSON string for composite products
         components: { type: DataTypes.TEXT, defaultValue: '' },
         // JSON string with applied tax IDs

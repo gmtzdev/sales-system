@@ -3,7 +3,7 @@ import sequelize from '../db'
 
 export type UserRole = 'admin' | 'vendedor'
 
-export interface UsuarioAttributes {
+export interface UserAttributes {
     id: number
     username: string
     password: string
@@ -12,10 +12,10 @@ export interface UsuarioAttributes {
     activo: boolean
 }
 
-type UsuarioCreationAttributes = Optional<UsuarioAttributes, 'id' | 'nombre' | 'rol' | 'activo'>
+type UserCreationAttributes = Optional<UserAttributes, 'id' | 'nombre' | 'rol' | 'activo'>
 
-class Usuario extends Model<UsuarioAttributes, UsuarioCreationAttributes>
-    implements UsuarioAttributes {
+class User extends Model<UserAttributes, UserCreationAttributes>
+    implements UserAttributes {
     declare id: number
     declare username: string
     declare password: string
@@ -24,7 +24,7 @@ class Usuario extends Model<UsuarioAttributes, UsuarioCreationAttributes>
     declare activo: boolean
 }
 
-Usuario.init(
+User.init(
     {
         id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
         username: {
@@ -44,4 +44,4 @@ Usuario.init(
     { sequelize, tableName: 'usuarios', timestamps: false }
 )
 
-export default Usuario
+export default User

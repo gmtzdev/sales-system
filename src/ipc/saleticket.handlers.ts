@@ -32,7 +32,7 @@ interface FindAllOptions {
 
 export function registerSaleTicketHandlers(): void {
     // Create a complete sale with its line items in a single transaction
-    ipcMain.handle('ventas:create', async (_event, { venta, detalles }: CreateVentaPayload) => {
+    ipcMain.handle('salesticket:create', async (_event, { venta, detalles }: CreateVentaPayload) => {
         const t = await sequelize.transaction()
         try {
             const nuevaVenta = await SaleTicket.create(venta, { transaction: t })
@@ -76,7 +76,7 @@ export function registerSaleTicketHandlers(): void {
     })
 
     // List all sales
-    ipcMain.handle('ventas:findAll', async (_event, opts: FindAllOptions = {}) => {
+    ipcMain.handle('salesticket:findAll', async (_event, opts: FindAllOptions = {}) => {
         return SaleTicket.findAll({
             order: opts.order ?? [['saled_at', 'DESC']],
             raw: true,
@@ -84,7 +84,7 @@ export function registerSaleTicketHandlers(): void {
     })
 
     // Get full sale details including line items and products
-    ipcMain.handle('ventas:findById', async (_event, id: number) => {
+    ipcMain.handle('salesticket:findById', async (_event, id: number) => {
         const venta = await SaleTicket.findByPk(id, {
             include: [
                 {

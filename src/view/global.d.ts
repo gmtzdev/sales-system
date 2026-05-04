@@ -23,7 +23,7 @@ interface ElectronAPI {
         update: (id: number, data: IpcOptions) => Promise<unknown>
         delete: (id: number) => Promise<unknown>
     }
-    ventas: {
+    salesticket: {
         create: (payload: IpcOptions) => Promise<unknown>
         findAll: (opts?: IpcOptions) => Promise<unknown[]>
         findById: (id: number) => Promise<unknown>

@@ -40,10 +40,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
 
     // Sales API
-    ventas: {
-        create: (payload: IpcOptions) => ipcRenderer.invoke('ventas:create', payload),
-        findAll: (opts?: IpcOptions) => ipcRenderer.invoke('ventas:findAll', opts),
-        findById: (id: number) => ipcRenderer.invoke('ventas:findById', id),
+    salesticket: {
+        create: (payload: IpcOptions) => ipcRenderer.invoke('salesticket:create', payload),
+        findAll: (opts?: IpcOptions) => ipcRenderer.invoke('salesticket:findAll', opts),
+        findById: (id: number) => ipcRenderer.invoke('salesticket:findById', id),
     },
 
     // Suppliers API

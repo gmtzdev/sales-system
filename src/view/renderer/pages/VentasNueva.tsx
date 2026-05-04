@@ -13,6 +13,8 @@ import { InputTextarea } from 'primereact/inputtextarea'
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
 import { Badge } from 'primereact/badge'
 import './VentasNueva.css'
+import { where } from 'sequelize'
+import { SaleTicket } from './core/interfaces/SaleTicket.interface'
 
 interface TabItem {
     key: string
@@ -67,8 +69,22 @@ function VentasNueva(): React.ReactElement {
     const [carritoSeleccionado, setCarritoSeleccionado] = useState<string | null>(null)
 
     useEffect(() => {
-        // loadProductos()
+        loadTickets()
     }, [])
+
+
+    // Cargar tickets abiertos
+    async function loadTickets(): Promise<void> {
+        try {
+            const rows = await window.electronAPI.salesticket.findAll({
+                where: { is_open: true },
+            }) as SaleTicket[]
+            console.log(rows);
+            // setProductos(rows)
+        } catch (err) {
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
+        }
+    }
 
 
     // Barra de búsqueda de productos
@@ -178,16 +194,7 @@ function VentasNueva(): React.ReactElement {
 
 
 
-    // async function loadProductos(): Promise<void> {
-    //     try {
-    //         const rows = await window.electronAPI.productos.findAll({
-    //             order: [['code', 'ASC']],
-    //         }) as ProductoRow[]
-    //         setProductos(rows)
-    //     } catch (err) {
-    //         toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
-    //     }
-    // }
+
 
 
 
@@ -235,7 +242,7 @@ function VentasNueva(): React.ReactElement {
         }
         setGuardando(true)
         try {
-            await window.electronAPI.ventas.create({
+            await window.electronAPI.salesticket.create({
                 venta: {
                     total,
                     notas,

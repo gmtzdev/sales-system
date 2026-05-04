@@ -66,7 +66,7 @@ class SaleTicket extends Model<SaleTicketAttributes, SaleTicketCreationAttribute
 SaleTicket.init(
     {
         id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-        folio: { type: DataTypes.INTEGER, allowNull: false },
+        folio: { type: DataTypes.INTEGER, allowNull: true },
         box_id: { type: DataTypes.INTEGER, allowNull: false },
         cashier_id: { type: DataTypes.INTEGER, allowNull: false },
         name: { type: DataTypes.STRING(255), allowNull: false },
@@ -87,7 +87,7 @@ SaleTicket.init(
         old_ticket_id: { type: DataTypes.INTEGER, allowNull: true },
         notes: { type: DataTypes.TEXT, defaultValue: '' },
         print_note: { type: DataTypes.TEXT, defaultValue: '' },
-        pay_method: { type: DataTypes.STRING(50), allowNull: false },
+        pay_method: { type: DataTypes.STRING(50), allowNull: true },
         reference: { type: DataTypes.STRING(255), allowNull: true },
         invoice_id: { type: DataTypes.INTEGER, allowNull: true },
         total_refund: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },

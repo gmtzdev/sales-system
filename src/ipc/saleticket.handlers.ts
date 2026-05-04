@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron'
-import type { Order } from 'sequelize'
+import type { Order, WhereOptions } from 'sequelize'
 import { sequelize, SaleTicket, SaleTicketArticles, Product } from '../database/models'
 import type { SaleTicketAttributes } from '../database/models/SaleTicket'
 
@@ -22,20 +22,23 @@ interface VentaDetallePayload {
 }
 
 interface CreateVentaPayload {
-    venta: Omit<SaleTicketAttributes, 'id'>
+    sale: Omit<SaleTicketAttributes, 'id'>
     detalles: VentaDetallePayload[]
 }
 
 interface FindAllOptions {
+    where?: WhereOptions<SaleTicketAttributes>
     order?: Order
+    limit?: number
+    includeAssociations?: boolean
 }
 
 export function registerSaleTicketHandlers(): void {
     // Create a complete sale with its line items in a single transaction
-    ipcMain.handle('salesticket:create', async (_event, { venta, detalles }: CreateVentaPayload) => {
+    ipcMain.handle('salesticket:create', async (_event, { sale, detalles }: CreateVentaPayload) => {
         const t = await sequelize.transaction()
         try {
-            const nuevaVenta = await SaleTicket.create(venta, { transaction: t })
+            const nuevaVenta = await SaleTicket.create(sale, { transaction: t })
 
             for (const det of detalles) {
                 await SaleTicketArticles.create(
@@ -77,8 +80,19 @@ export function registerSaleTicketHandlers(): void {
 
     // List all sales
     ipcMain.handle('salesticket:findAll', async (_event, opts: FindAllOptions = {}) => {
+        const { where, order, limit, includeAssociations } = opts
         return SaleTicket.findAll({
-            order: opts.order ?? [['saled_at', 'DESC']],
+            where,
+            order: order ?? [['saled_at', 'DESC']],
+            limit,
+            include: includeAssociations
+                ? [
+                    {
+                        association: 'articles',
+                        include: [{ association: 'product', attributes: ['code', 'description'] }],
+                    },
+                ]
+                : undefined,
             raw: true,
         })
     })

@@ -3,12 +3,19 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Button } from 'primereact/button'
 import Productos from './Productos'
-import Users from './Users'
+import Users from './admin/Users'
 import Suppliers from './admin/Suppliers'
 import Departaments from './admin/Departaments'
 import SalesResumen from './SalesResumen'
 
-const PAGES = [
+interface Page {
+    key: string
+    label: string
+    icon: string
+    component: React.ReactNode
+}
+
+const PAGES: Page[] = [
     { key: 'dashboard', label: 'Dashboard', icon: 'pi pi-home', component: <SalesResumen /> },
     { key: 'productos', label: 'Productos', icon: 'pi pi-box', component: <Productos /> },
     { key: 'users', label: 'Usuarios', icon: 'pi pi-users', component: <Users /> },
@@ -16,12 +23,12 @@ const PAGES = [
     { key: 'departaments', label: 'Departments', icon: 'pi pi-sitemap', component: <Departaments /> },
 ]
 
-function Dashboard() {
+function Dashboard(): React.ReactElement {
     const { user, logout } = useAuth()
     const navigate = useNavigate()
-    const [activePage, setActivePage] = useState('dashboard')
+    const [activePage, setActivePage] = useState<string>('dashboard')
 
-    function handleLogout() {
+    function handleLogout(): void {
         logout()
         navigate('/')
     }
@@ -90,4 +97,3 @@ function Dashboard() {
 }
 
 export default Dashboard
-

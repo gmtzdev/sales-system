@@ -12,90 +12,111 @@ import { Dropdown } from 'primereact/dropdown'
 import { Tag } from 'primereact/tag'
 import { Password } from 'primereact/password'
 
-const EMPTY_USER = { username: '', password: '', nombre: '', rol: 'vendedor', activo: true }
+export type UserRole = 'admin' | 'vendedor'
+
+interface UserRow {
+    id?: number
+    name: string
+    address: string
+    phoneNumber: string
+    username: string
+    email: string
+    password: string
+    rol: UserRole
+    isActive: boolean
+}
+
+const EMPTY_USER: UserRow = { username: '', password: '', name: '', address: '', phoneNumber: '', email: '', rol: 'vendedor', isActive: true }
+
 const ROLES = [
     { label: 'Administrador', value: 'admin' },
     { label: 'Vendedor', value: 'vendedor' },
 ]
 
-function Users() {
-    const toast = useRef(null)
-    const [usuarios, setUsuarios] = useState([])
-    const [loading, setLoading] = useState(false)
-    const [globalFilter, setGlobalFilter] = useState('')
-    const [dialogVisible, setDialogVisible] = useState(false)
-    const [usuario, setUsuario] = useState(EMPTY_USER)
-    const [saving, setSaving] = useState(false)
+function Users(): React.ReactElement {
+    const toast = useRef<Toast>(null)
+    const [usuarios, setUsuarios] = useState<UserRow[]>([])
+    const [loading, setLoading] = useState<boolean>(false)
+    const [globalFilter, setGlobalFilter] = useState<string>('')
+    const [dialogVisible, setDialogVisible] = useState<boolean>(false)
+    const [usuario, setUsuario] = useState<UserRow>(EMPTY_USER)
+    const [saving, setSaving] = useState<boolean>(false)
     const isEditing = Boolean(usuario.id)
 
     useEffect(() => {
         loadUsuarios()
     }, [])
 
-    async function loadUsuarios() {
+    async function loadUsuarios(): Promise<void> {
         setLoading(true)
         try {
             const rows = await window.electronAPI.users.findAll({
                 order: [['username', 'ASC']],
             })
-            setUsuarios(rows)
+            setUsuarios(rows as UserRow[])
         } catch (err) {
-            toast.current.show({ severity: 'error', summary: 'Error', detail: err.message })
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
         } finally {
             setLoading(false)
         }
     }
 
-    function openNew() {
+    function openNew(): void {
         setUsuario(EMPTY_USER)
         setDialogVisible(true)
     }
 
-    function openEdit(row) {
+    function openEdit(row: UserRow): void {
         setUsuario({ ...row, password: '' })
         setDialogVisible(true)
     }
 
-    async function saveUsuario() {
+    async function saveUsuario(): Promise<void> {
         if (!usuario.username.trim()) {
-            toast.current.show({ severity: 'warn', summary: 'Requerido', detail: 'El nombre de usuario es obligatorio' })
+            toast.current?.show({ severity: 'warn', summary: 'Requerido', detail: 'El nombre de usuario es obligatorio' })
             return
         }
         if (!isEditing && !usuario.password) {
-            toast.current.show({ severity: 'warn', summary: 'Requerido', detail: 'La contraseña es obligatoria para nuevos usuarios' })
+            toast.current?.show({ severity: 'warn', summary: 'Requerido', detail: 'La contraseña es obligatoria para nuevos usuarios' })
             return
         }
         setSaving(true)
         try {
             if (isEditing) {
-                await window.electronAPI.users.update(usuario.id, {
+                await window.electronAPI.users.update(usuario.id!, {
                     username: usuario.username,
-                    nombre: usuario.nombre,
+                    name: usuario.name,
+                    address: usuario.address,
+                    phoneNumber: usuario.phoneNumber,
+                    email: usuario.email,
                     rol: usuario.rol,
-                    activo: usuario.activo,
+                    isActive: usuario.isActive,
                     ...(usuario.password ? { password: usuario.password } : {}),
                 })
-                toast.current.show({ severity: 'success', summary: 'Actualizado', detail: usuario.username })
+                toast.current?.show({ severity: 'success', summary: 'Actualizado', detail: usuario.username })
             } else {
                 await window.electronAPI.users.create({
                     username: usuario.username,
                     password: usuario.password,
-                    nombre: usuario.nombre,
+                    name: usuario.name,
+                    address: usuario.address,
+                    phoneNumber: usuario.phoneNumber,
+                    email: usuario.email,
                     rol: usuario.rol,
-                    activo: usuario.activo,
+                    isActive: usuario.isActive,
                 })
-                toast.current.show({ severity: 'success', summary: 'Creado', detail: usuario.username })
+                toast.current?.show({ severity: 'success', summary: 'Creado', detail: usuario.username })
             }
             setDialogVisible(false)
             loadUsuarios()
         } catch (err) {
-            toast.current.show({ severity: 'error', summary: 'Error', detail: err.message })
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
         } finally {
             setSaving(false)
         }
     }
 
-    function confirmDelete(row) {
+    function confirmDelete(row: UserRow): void {
         confirmDialog({
             message: `¿Eliminar al usuario "${row.username}"?`,
             header: 'Confirmar eliminación',
@@ -107,30 +128,30 @@ function Users() {
         })
     }
 
-    async function deleteUsuario(row) {
+    async function deleteUsuario(row: UserRow): Promise<void> {
         try {
-            await window.electronAPI.users.delete(row.id)
-            toast.current.show({ severity: 'info', summary: 'Eliminado', detail: row.username })
+            await window.electronAPI.users.delete(row.id!)
+            toast.current?.show({ severity: 'info', summary: 'Eliminado', detail: row.username })
             loadUsuarios()
         } catch (err) {
-            toast.current.show({ severity: 'error', summary: 'Error', detail: err.message })
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
         }
     }
 
-    const rolTemplate = (row) => {
+    const rolTemplate = (row: UserRow): React.ReactElement => {
         const severity = row.rol === 'admin' ? 'danger' : 'info'
         const label = row.rol === 'admin' ? 'Administrador' : 'Vendedor'
         return <Tag value={label} severity={severity} />
     }
 
-    const activoTemplate = (row) => (
+    const activoTemplate = (row: UserRow): React.ReactElement => (
         <Tag
-            value={row.activo ? 'Activo' : 'Inactivo'}
-            severity={row.activo ? 'success' : 'secondary'}
+            value={row.isActive ? 'Activo' : 'Inactivo'}
+            severity={row.isActive ? 'success' : 'secondary'}
         />
     )
 
-    const actionsTemplate = (row) => (
+    const actionsTemplate = (row: UserRow): React.ReactElement => (
         <div style={{ display: 'flex', gap: '0.5rem' }}>
             <Button icon="pi pi-pencil" rounded text severity="info" onClick={() => openEdit(row)} />
             <Button icon="pi pi-trash" rounded text severity="danger" onClick={() => confirmDelete(row)} />
@@ -146,7 +167,7 @@ function Users() {
                     <InputText
                         placeholder="Buscar..."
                         value={globalFilter}
-                        onChange={e => setGlobalFilter(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGlobalFilter(e.target.value)}
                     />
                 </IconField>
                 <Button label="Nuevo" icon="pi pi-plus" onClick={openNew} />
@@ -171,7 +192,7 @@ function Users() {
                 loading={loading}
                 header={header}
                 globalFilter={globalFilter}
-                globalFilterFields={['username', 'nombre', 'rol']}
+                globalFilterFields={['username', 'name', 'email', 'rol']}
                 paginator
                 rows={10}
                 rowsPerPageOptions={[10, 25, 50]}
@@ -179,9 +200,10 @@ function Users() {
                 stripedRows
             >
                 <Column field="username" header="Usuario" sortable />
-                <Column field="nombre" header="Nombre completo" sortable />
+                <Column field="name" header="Nombre completo" sortable />
+                <Column field="email" header="Correo" sortable />
                 <Column field="rol" header="Rol" body={rolTemplate} sortable />
-                <Column field="activo" header="Estado" body={activoTemplate} sortable />
+                <Column field="isActive" header="Estado" body={activoTemplate} sortable />
                 <Column body={actionsTemplate} header="Acciones" style={{ width: '8rem' }} />
             </DataTable>
 
@@ -200,7 +222,7 @@ function Users() {
                         </label>
                         <InputText
                             value={usuario.username}
-                            onChange={e => setUsuario(prev => ({ ...prev, username: e.target.value }))}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsuario(prev => ({ ...prev, username: e.target.value }))}
                             style={{ width: '100%' }}
                             placeholder="nombre de usuario"
                         />
@@ -211,10 +233,41 @@ function Users() {
                             Nombre completo
                         </label>
                         <InputText
-                            value={usuario.nombre}
-                            onChange={e => setUsuario(prev => ({ ...prev, nombre: e.target.value }))}
+                            value={usuario.name}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsuario(prev => ({ ...prev, name: e.target.value }))}
                             style={{ width: '100%' }}
                             placeholder="nombre visible"
+                        />
+                    </div>
+
+                    <div className="p-field">
+                        <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 500 }}>Correo electrónico</label>
+                        <InputText
+                            value={usuario.email}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsuario(prev => ({ ...prev, email: e.target.value }))}
+                            style={{ width: '100%' }}
+                            placeholder="correo@ejemplo.com"
+                            type="email"
+                        />
+                    </div>
+
+                    <div className="p-field">
+                        <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 500 }}>Teléfono</label>
+                        <InputText
+                            value={usuario.phoneNumber}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsuario(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                            style={{ width: '100%' }}
+                            placeholder="número de teléfono"
+                        />
+                    </div>
+
+                    <div className="p-field">
+                        <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 500 }}>Dirección</label>
+                        <InputText
+                            value={usuario.address}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsuario(prev => ({ ...prev, address: e.target.value }))}
+                            style={{ width: '100%' }}
+                            placeholder="dirección"
                         />
                     </div>
 
@@ -224,7 +277,7 @@ function Users() {
                         </label>
                         <Password
                             value={usuario.password}
-                            onChange={e => setUsuario(prev => ({ ...prev, password: e.target.value }))}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsuario(prev => ({ ...prev, password: e.target.value }))}
                             style={{ width: '100%' }}
                             inputStyle={{ width: '100%' }}
                             placeholder={isEditing ? 'Dejar vacío para no cambiar' : 'contraseña'}
@@ -246,12 +299,12 @@ function Users() {
                     <div className="p-field">
                         <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 500 }}>Estado</label>
                         <Dropdown
-                            value={usuario.activo}
+                            value={usuario.isActive}
                             options={[
                                 { label: 'Activo', value: true },
                                 { label: 'Inactivo', value: false },
                             ]}
-                            onChange={e => setUsuario(prev => ({ ...prev, activo: e.value }))}
+                            onChange={e => setUsuario(prev => ({ ...prev, isActive: e.value }))}
                             style={{ width: '100%' }}
                         />
                     </div>

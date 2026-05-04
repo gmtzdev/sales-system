@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, Menu, MenuItem } from 'electron'
 import path from 'path'
 import { initDatabase, closeDatabase } from './database/models'
 import { registerProductosHandlers } from './ipc/productos.handlers'
@@ -27,6 +27,22 @@ function createWindow(): void {
             nodeIntegration: false,
         },
     })
+
+    const defaultMenu = Menu.getApplicationMenu()
+    const menu = Menu.buildFromTemplate([
+        ...(defaultMenu?.items ?? []),
+        new MenuItem({
+            label: 'Herramientas',
+            submenu: Menu.buildFromTemplate([
+                {
+                    label: 'Herramientas de desarrollo',
+                    accelerator: 'F12',
+                    click: () => win.webContents.toggleDevTools(),
+                },
+            ]),
+        }),
+    ])
+    Menu.setApplicationMenu(menu)
 
     if (isDev) {
         win.loadURL('http://localhost:5173')

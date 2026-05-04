@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
         create: (data: IpcOptions) => ipcRenderer.invoke('users:create', data),
         update: (id: number, data: IpcOptions) => ipcRenderer.invoke('users:update', id, data),
         delete: (id: number) => ipcRenderer.invoke('users:delete', id),
+        login: (username: string, password: string) => ipcRenderer.invoke('users:login', username, password),
     },
 
     // Sales API

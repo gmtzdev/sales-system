@@ -22,6 +22,7 @@ interface ElectronAPI {
         create: (data: IpcOptions) => Promise<unknown>
         update: (id: number, data: IpcOptions) => Promise<unknown>
         delete: (id: number) => Promise<unknown>
+        login: (username: string, password: string) => Promise<{ ok: boolean; user?: Record<string, unknown>; error?: string }>
     }
     salesticket: {
         create: (payload: IpcOptions) => Promise<unknown>

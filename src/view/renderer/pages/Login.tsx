@@ -10,20 +10,22 @@ import { Password } from 'primereact/password'
 import { Button } from 'primereact/button'
 import { Message } from 'primereact/message'
 
-function Login() {
+function Login(): React.ReactElement {
     const { login } = useAuth()
     const navigate = useNavigate()
-    const [username, setUsername] = useState('')
-    const [password, setPassword] = useState('')
-    const [error, setError] = useState('')
+    const [username, setUsername] = useState<string>('')
+    const [password, setPassword] = useState<string>('')
+    const [error, setError] = useState<string>('')
 
-    function handleSubmit(e) {
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>): Promise<void> {
         e.preventDefault()
-        const ok = login(username, password)
-        if (ok) {
+        setError('')
+        const result = await login(username, password)
+        if (result.ok) {
+            console.log('Si llega aqui');
             navigate('/dashboard')
         } else {
-            setError('Usuario o contraseña incorrectos')
+            setError(result.error ?? 'Usuario o contraseña incorrectos')
         }
     }
 
@@ -40,7 +42,7 @@ function Login() {
                         <InputText
                             id="username"
                             value={username}
-                            onChange={e => setUsername(e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
                             autoFocus
                             required
                         />
@@ -53,7 +55,7 @@ function Login() {
                         <Password
                             inputId="password"
                             value={password}
-                            onChange={e => setPassword(e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                             feedback={false}
                             toggleMask
                             required
@@ -68,5 +70,3 @@ function Login() {
 }
 
 export default Login
-
-

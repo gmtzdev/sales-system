@@ -54,4 +54,16 @@ export function registerUsersHandlers(): void {
         const affectedRows = await Usuario.destroy({ where: { id } })
         return { affectedRows }
     })
+
+    ipcMain.handle('users:login', async (_event, username: string, password: string) => {
+        const user = await Usuario.findOne({ where: { username } })
+        if (!user) return { ok: false, error: 'Usuario o contraseña incorrectos' }
+        if (!user.isActive) return { ok: false, error: 'El usuario está desactivado' }
+
+        const valid = await bcrypt.compare(password, user.password)
+        if (!valid) return { ok: false, error: 'Usuario o contraseña incorrectos' }
+
+        const { password: _pw, ...safe } = user.toJSON()
+        return { ok: true, user: safe }
+    })
 }

@@ -9,10 +9,10 @@ import { Skeleton } from 'primereact/skeleton'
 
 interface VentaRow {
     id: number
-    fecha: string
+    saled_at: string
     total: number
-    notas: string
-    vendedor: string
+    notes: string
+    name: string
 }
 
 interface ProductoResumenRow {
@@ -106,7 +106,7 @@ export default function SalesResumen(): React.ReactElement {
             setLoading(true)
             try {
                 const [v, p] = await Promise.all([
-                    window.electronAPI.ventas.findAll() as Promise<VentaRow[]>,
+                    window.electronAPI.salesticket.findAll({ where: { is_open: false }, order: [['saled_at', 'DESC']] }) as unknown as Promise<VentaRow[]>,
                     window.electronAPI.productos.findAll() as Promise<ProductoResumenRow[]>,
                 ])
                 setVentas(v)
@@ -126,9 +126,9 @@ export default function SalesResumen(): React.ReactElement {
     const semana = startOfWeek(now)
     const mes = startOfMonth(now)
 
-    const ventasHoy = ventas.filter(v => new Date(v.fecha) >= hoy)
-    const ventasSemana = ventas.filter(v => new Date(v.fecha) >= semana)
-    const ventasMes = ventas.filter(v => new Date(v.fecha) >= mes)
+    const ventasHoy = ventas.filter(v => new Date(v.saled_at) >= hoy)
+    const ventasSemana = ventas.filter(v => new Date(v.saled_at) >= semana)
+    const ventasMes = ventas.filter(v => new Date(v.saled_at) >= mes)
 
     const totalHoy = ventasHoy.reduce((a, v) => a + Number(v.total), 0)
     const totalSemana = ventasSemana.reduce((a, v) => a + Number(v.total), 0)
@@ -189,7 +189,7 @@ export default function SalesResumen(): React.ReactElement {
     // ── Top vendedores del mes ─────────────────────────────────────────────────
     const vendedoresMap = new Map<string, { total: number; count: number }>()
     ventasMes.forEach(v => {
-        const key = v.vendedor || '—'
+        const key = v.name || '—'
         const prev = vendedoresMap.get(key) ?? { total: 0, count: 0 }
         vendedoresMap.set(key, { total: prev.total + Number(v.total), count: prev.count + 1 })
     })
@@ -251,12 +251,12 @@ export default function SalesResumen(): React.ReactElement {
                         >
                             <Column field="id" header="#" style={{ width: '3rem', color: '#888' }} />
                             <Column
-                                field="fecha"
+                                field="saled_at"
                                 header="Fecha"
-                                body={(r: VentaRow) => fmtDate(r.fecha)}
+                                body={(r: VentaRow) => fmtDate(r.saled_at)}
                                 style={{ width: '10rem' }}
                             />
-                            <Column field="vendedor" header="Vendedor" style={{ width: '8rem' }} />
+                            <Column field="name" header="Ticket" style={{ width: '8rem' }} />
                             <Column
                                 field="total"
                                 header="Total"
@@ -266,11 +266,11 @@ export default function SalesResumen(): React.ReactElement {
                                 style={{ width: '7rem' }}
                             />
                             <Column
-                                field="notas"
+                                field="notes"
                                 header="Notas"
                                 body={(r: VentaRow) => (
-                                    <span style={{ color: '#888', fontStyle: r.notas ? 'normal' : 'italic' }}>
-                                        {r.notas || '—'}
+                                    <span style={{ color: '#888', fontStyle: r.notes ? 'normal' : 'italic' }}>
+                                        {r.notes || '—'}
                                     </span>
                                 )}
                             />

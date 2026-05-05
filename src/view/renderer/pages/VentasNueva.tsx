@@ -68,7 +68,13 @@ function VentasNueva(): React.ReactElement {
     const [ticketActivo, setTicketActivo] = useState<string>('Ticket #1')
     const [carritoSeleccionado, setCarritoSeleccionado] = useState<string | null>(null)
 
+    // Operation
+    const [operation, setOperation] = useState<OperationRecord | null>(null)
+    const loadedRef = useRef(false)
+
     useEffect(() => {
+        if (loadedRef.current) return
+        loadedRef.current = true
         loadTickets()
     }, [])
 
@@ -78,9 +84,16 @@ function VentasNueva(): React.ReactElement {
         try {
             const rows = await window.electronAPI.salesticket.findAll({
                 where: { is_open: true },
+                order: [['id', 'ASC']]
+
             }) as SaleTicket[]
 
-            console.log(rows);
+            const operationId = localStorage.getItem('operation_id')
+            let currentOperation: OperationRecord | null = null
+            if (operationId) {
+                currentOperation = { id: Number(operationId) } as OperationRecord
+                setOperation(currentOperation)
+            }
 
             if (rows.length <= 0) {
                 // Create a default ticket if none are open
@@ -89,13 +102,13 @@ function VentasNueva(): React.ReactElement {
                     cashier_id: 0,
                     name: 'Ticket #1',
                     is_open: true,
-                    operation_id: 0
+                    operation_id: currentOperation?.id ?? 0
                 }
                 const createdTicket = await window.electronAPI.salesticket.create({ sale: defaultTicket, detalles: [] })
-
                 setTickets([createdTicket])
+            } else {
+                setTickets(rows)
             }
-            // setProductos(rows)
         } catch (err) {
             toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
         }
@@ -497,7 +510,7 @@ function VentasNueva(): React.ReactElement {
                     <button
                         onClick={async () => {
                             const nombre = `Ticket #${tickets.length + 1}`
-                            const newTicket: SaleTicket = { box_id: 0, cashier_id: 0, name: nombre, is_open: true, operation_id: 0 }
+                            const newTicket: SaleTicket = { box_id: 0, cashier_id: 0, name: nombre, is_open: true, operation_id: operation?.id ?? 0 }
                             const created = await window.electronAPI.salesticket.create({ sale: newTicket, detalles: [] })
                             setTickets(prev => [...prev, created])
                             setTicketActivo(created.name)

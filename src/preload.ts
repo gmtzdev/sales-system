@@ -45,6 +45,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
         create: (payload: IpcOptions) => ipcRenderer.invoke('salesticket:create', payload),
         findAll: (opts?: IpcOptions) => ipcRenderer.invoke('salesticket:findAll', opts),
         findById: (id: number) => ipcRenderer.invoke('salesticket:findById', id),
+        articles: {
+            create: (data: IpcOptions) => ipcRenderer.invoke('salesticket:article:create', data),
+            update: (id: number, amount: number) => ipcRenderer.invoke('salesticket:article:update', id, amount),
+            delete: (id: number) => ipcRenderer.invoke('salesticket:article:delete', id),
+        },
     },
 
     // Suppliers API

@@ -49,6 +49,21 @@ interface CarItem {
     subtotal: number
     stock: number
     tsale: string
+    article_id?: number
+}
+
+interface TicketArticle {
+    id: number
+    ticket_id: number
+    product_code: string
+    product_name: string
+    amount: number
+    price_used: number
+    product?: { code: string; description: string, tsale: string, psale: number, dinventary: number }
+}
+
+interface TicketWithArticles extends SaleTicket {
+    articles?: TicketArticle[]
 }
 
 const tabls: TabItem[] = [
@@ -65,7 +80,7 @@ function VentasNueva(): React.ReactElement {
     const [notas, setNotas] = useState<string>('')
     const [guardando, setGuardando] = useState<boolean>(false)
     const [tickets, setTickets] = useState<SaleTicket[]>(new Array(0))
-    const [ticketActivo, setTicketActivo] = useState<string>('Ticket #1')
+    const [ticketActivo, setTicketActivo] = useState<number>(0)
     const [carritoSeleccionado, setCarritoSeleccionado] = useState<string | null>(null)
 
     // Operation
@@ -106,14 +121,43 @@ function VentasNueva(): React.ReactElement {
                 }
                 const createdTicket = await window.electronAPI.salesticket.create({ sale: defaultTicket, detalles: [] })
                 setTickets([createdTicket])
+                setTicketActivo(createdTicket.id ?? 0)
             } else {
                 setTickets(rows)
+                setTicketActivo(rows[0].id ?? 0)
+                await loadTicketArticles(rows[0].id ?? 0)
             }
         } catch (err) {
             toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
         }
     }
 
+
+    // Cargar artículos del ticket seleccionado
+    async function loadTicketArticles(ticketId: number): Promise<void> {
+        if (!ticketId) return
+        try {
+            const ticket = await window.electronAPI.salesticket.findById(ticketId) as TicketWithArticles | null
+            if (!ticket?.articles?.length) {
+                setCarrito([])
+                return
+            }
+            const items: CarItem[] = ticket.articles.map(a => ({
+                code: a.product_code,
+                description: a.product?.description ?? a.product_name,
+                psale: a.price_used,
+                amount: a.amount,
+                subtotal: Number((a.amount * a.price_used).toFixed(2)),
+                stock: a.product?.dinventary ?? 999,
+                tsale: a.product?.tsale ?? 'U',
+                article_id: a.id,
+            }))
+            setCarrito(items)
+            setCarritoSeleccionado(null)
+        } catch (err) {
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
+        }
+    }
 
     // Barra de búsqueda de productos
     const [busqueda, setBusqueda] = useState<string>('')
@@ -142,61 +186,100 @@ function VentasNueva(): React.ReactElement {
 
     // ── Carrito ──────────────────────────────────────────────────
     const [carrito, setCarrito] = useState<CarItem[]>([])
-    function agregarAlCarrito(producto: ProductoRow): void {
+    async function agregarAlCarrito(producto: ProductoRow): Promise<void> {
         if (producto.dinventary <= 0) {
             toast.current?.show({ severity: 'warn', summary: 'Sin stock', detail: `"${producto.description}" no tiene stock disponible` })
             return
         }
-        setCarrito(prev => {
-            const idx = prev.findIndex(i => i.code === producto.code)
-            if (idx >= 0) {
-                const item = prev[idx]
-                if (item.amount >= producto.dinventary) {
-                    toast.current?.show({ severity: 'warn', summary: 'Stock insuficiente', detail: `Máximo ${producto.dinventary} unidades` })
-                    return prev
-                }
-                const updated = [...prev]
-                updated[idx] = {
-                    ...item,
-                    amount: item.amount + 1,
-                    subtotal: Number(((item.amount + 1) * item.psale).toFixed(2)),
-                }
-                return updated
+        const idx = carrito.findIndex(i => i.code === producto.code)
+        if (idx >= 0) {
+            const item = carrito[idx]
+            if (item.amount >= producto.dinventary) {
+                toast.current?.show({ severity: 'warn', summary: 'Stock insuficiente', detail: `Máximo ${producto.dinventary} unidades` })
+                return
             }
-            const nuevo: CarItem = {
-                code: producto.code,
-                description: producto.description,
-                psale: Number(producto.psale),
-                amount: 1,
-                subtotal: Number(producto.psale),
-                stock: producto.dinventary,
-                tsale: producto.tsale,
+            const newAmount = item.amount + 1
+            if (item.article_id) {
+                await window.electronAPI.salesticket.articles.update(item.article_id, newAmount)
             }
-            setCarritoSeleccionado(producto.code)
-            return [...prev, nuevo]
-        })
+            setCarrito(prev => prev.map(i =>
+                i.code === producto.code
+                    ? { ...i, amount: newAmount, subtotal: Number((newAmount * i.psale).toFixed(2)) }
+                    : i
+            ))
+        } else {
+            try {
+                const article = await window.electronAPI.salesticket.articles.create({
+                    ticket_id: ticketActivo,
+                    product_code: producto.code,
+                    product_name: producto.description,
+                    amount: 1,
+                    profit: Number(producto.psale) - Number(producto.pcost),
+                    departament_id: producto.dept ?? 0,
+                    pay_at: new Date(),
+                    uses_wholesale_price: false,
+                    discount_percentage: 0,
+                    components: producto.components ?? '',
+                    taxes_used: producto.taxes ?? '',
+                    unit_tax: 0,
+                    price_used: Number(producto.psale),
+                    amount_returned: 0,
+                    was_returned: false,
+                    percentage_paid: 100,
+                })
+                const nuevo: CarItem = {
+                    code: producto.code,
+                    description: producto.description,
+                    psale: Number(producto.psale),
+                    amount: 1,
+                    subtotal: Number(producto.psale),
+                    stock: producto.dinventary,
+                    tsale: producto.tsale,
+                    article_id: article.id,
+                }
+                setCarritoSeleccionado(producto.code)
+                setCarrito(prev => [...prev, nuevo])
+            } catch (err) {
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
+            }
+        }
     }
 
-    function cambiarCantidad(producto_code: string, nuevaCantidad: number | null): void {
+    async function cambiarCantidad(producto_code: string, nuevaCantidad: number | null): Promise<void> {
+        const item = carrito.find(i => i.code === producto_code)
+        if (!item) return
+
+        if (item.tsale === 'U') {
+            nuevaCantidad = Math.round(nuevaCantidad ?? 1)
+        }
+
+        const cant = Math.max(0.01, Math.min(nuevaCantidad ?? 1, item.stock))
+        if (item.article_id) {
+            await window.electronAPI.salesticket.articles.update(item.article_id, cant)
+        }
         setCarrito(prev =>
-            prev.map(item => {
-                if (item.code !== producto_code) return item
-
-                if (item.tsale === 'U') {
-                    nuevaCantidad = Math.round(nuevaCantidad ?? 1)
-                }
-
-                const cant = Math.max(0.01, Math.min(nuevaCantidad ?? 1, item.stock))
-                return { ...item, amount: cant, subtotal: Number((Math.round(cant * item.psale * 2) / 2).toFixed(2)) }
-            }),
+            prev.map(i =>
+                i.code === producto_code
+                    ? { ...i, amount: cant, subtotal: Number((Math.round(cant * i.psale * 2) / 2).toFixed(2)) }
+                    : i
+            )
         )
     }
 
-    function quitarDelCarrito(producto_code: string): void {
+    async function quitarDelCarrito(producto_code: string): Promise<void> {
+        const item = carrito.find(i => i.code === producto_code)
+        if (item?.article_id) {
+            await window.electronAPI.salesticket.articles.delete(item.article_id)
+        }
         setCarrito(prev => prev.filter(i => i.code !== producto_code))
     }
 
     function limpiarCarrito(): void {
+        carrito.forEach(item => {
+            if (item.article_id) {
+                window.electronAPI.salesticket.articles.delete(item.article_id)
+            }
+        })
         setCarrito([])
         setNotas('')
         setCarritoSeleccionado(null)
@@ -485,11 +568,14 @@ function VentasNueva(): React.ReactElement {
                     scrollbarWidth: 'thin',
                 }}>
                     {tickets.map(ticket => {
-                        const activo = ticketActivo === ticket.name
+                        const activo = ticketActivo === ticket.id
                         return (
                             <button
                                 key={ticket.id ?? ticket.name}
-                                onClick={() => setTicketActivo(ticket.name)}
+                                onClick={() => {
+                                    setTicketActivo(ticket.id ?? 0)
+                                    loadTicketArticles(ticket.id ?? 0)
+                                }}
                                 style={{
                                     flexShrink: 0,
                                     padding: '0.35rem 0.85rem',
@@ -513,7 +599,9 @@ function VentasNueva(): React.ReactElement {
                             const newTicket: SaleTicket = { box_id: 0, cashier_id: 0, name: nombre, is_open: true, operation_id: operation?.id ?? 0 }
                             const created = await window.electronAPI.salesticket.create({ sale: newTicket, detalles: [] })
                             setTickets(prev => [...prev, created])
-                            setTicketActivo(created.name)
+                            setTicketActivo(created.id ?? 0)
+                            setCarrito([])
+                            setCarritoSeleccionado(null)
                         }}
                         style={{
                             flexShrink: 0,

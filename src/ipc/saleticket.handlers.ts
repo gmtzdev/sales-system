@@ -89,7 +89,7 @@ export function registerSaleTicketHandlers(): void {
                 ? [
                     {
                         association: 'articles',
-                        include: [{ association: 'product', attributes: ['code', 'description'] }],
+                        include: [{ association: 'product', attributes: ['code', 'description', 'tsale', 'psale'] }],
                     },
                 ]
                 : undefined,
@@ -103,10 +103,45 @@ export function registerSaleTicketHandlers(): void {
             include: [
                 {
                     association: 'articles',
-                    include: [{ association: 'product', attributes: ['code', 'description'] }],
+                    include: [{ association: 'product', attributes: ['code', 'description', 'tsale', 'psale', 'dinventary'] }],
                 },
             ],
         })
         return venta ? venta.toJSON() : null
+    })
+
+    // Create a single article for an open ticket (no inventory decrement — deferred to sale close)
+    ipcMain.handle('salesticket:article:create', async (_event, data: {
+        ticket_id: number
+        product_code: string
+        product_name: string
+        amount: number
+        profit: number
+        departament_id: number
+        pay_at: Date
+        uses_wholesale_price: boolean
+        discount_percentage: number
+        components: string
+        taxes_used: string
+        unit_tax: number
+        price_used: number
+        amount_returned: number
+        was_returned: boolean
+        percentage_paid: number
+    }) => {
+        const article = await SaleTicketArticles.create(data)
+        return article.toJSON()
+    })
+
+    // Update the amount of an existing article
+    ipcMain.handle('salesticket:article:update', async (_event, id: number, amount: number) => {
+        await SaleTicketArticles.update({ amount }, { where: { id } })
+        return { ok: true }
+    })
+
+    // Delete a single article
+    ipcMain.handle('salesticket:article:delete', async (_event, id: number) => {
+        await SaleTicketArticles.destroy({ where: { id } })
+        return { ok: true }
     })
 }

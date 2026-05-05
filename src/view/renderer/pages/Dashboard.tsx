@@ -1,7 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Button } from 'primereact/button'
+import { Dialog } from 'primereact/dialog'
+import { InputNumber } from 'primereact/inputnumber'
+import { Toast } from 'primereact/toast'
 import Productos from './Productos'
 import Users from './admin/Users'
 import Suppliers from './admin/Suppliers'
@@ -26,7 +29,57 @@ const PAGES: Page[] = [
 function Dashboard(): React.ReactElement {
     const { user, logout } = useAuth()
     const navigate = useNavigate()
+    const toast = useRef<InstanceType<typeof Toast>>(null)
     const [activePage, setActivePage] = useState<string>('dashboard')
+
+    // Operation state
+    const [operation, setOperation] = useState<OperationRecord | null>(null)
+    const [checkingOp, setCheckingOp] = useState<boolean>(true)
+    const [openOpDialog, setOpenOpDialog] = useState<boolean>(false)
+    const [moneyInBox, setMoneyInBox] = useState<number>(0)
+    const [savingOp, setSavingOp] = useState<boolean>(false)
+
+    useEffect(() => {
+        checkOperation()
+    }, [])
+
+    async function checkOperation(): Promise<void> {
+        try {
+            const op = await window.electronAPI.operations.findOpen()
+            console.log(op);
+            if (op) {
+                setOperation(op)
+                localStorage.setItem('operation_id', String(op.id))
+            } else {
+                localStorage.removeItem('operation_id')
+                setOpenOpDialog(true)
+            }
+        } catch (err) {
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
+        } finally {
+            setCheckingOp(false)
+        }
+    }
+
+    async function crearOperacion(): Promise<void> {
+        setSavingOp(true)
+        try {
+            const op = await window.electronAPI.operations.create({
+                money_in_box: moneyInBox,
+                exchange_rate: 1,
+                start_user_id: user?.id ?? 0,
+                box_id: 1,
+            })
+            setOperation(op)
+            localStorage.setItem('operation_id', String(op.id))
+            setOpenOpDialog(false)
+            toast.current?.show({ severity: 'success', summary: 'Operación abierta', detail: `Fondo: $${moneyInBox.toFixed(2)}` })
+        } catch (err) {
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
+        } finally {
+            setSavingOp(false)
+        }
+    }
 
     function handleLogout(): void {
         logout()
@@ -37,6 +90,45 @@ function Dashboard(): React.ReactElement {
 
     return (
         <div style={{ display: 'flex', height: '100vh' }}>
+            <Toast ref={toast} />
+
+            {/* Modal: nueva operación */}
+            <Dialog
+                header="Abrir operación del día"
+                visible={openOpDialog}
+                style={{ width: '380px' }}
+                closable={false}
+                draggable={false}
+                onHide={() => { /* no se puede cerrar sin crear operación */ }}
+                footer={
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                        <Button
+                            label="Abrir operación"
+                            icon="pi pi-check"
+                            onClick={crearOperacion}
+                            loading={savingOp}
+                        />
+                    </div>
+                }
+            >
+                <p style={{ marginBottom: '1rem', color: '#555' }}>
+                    No hay ninguna operación abierta. Ingresa el fondo inicial de caja para comenzar.
+                </p>
+                <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 500 }}>
+                    Fondo inicial de caja
+                </label>
+                <InputNumber
+                    value={moneyInBox}
+                    onValueChange={e => setMoneyInBox(e.value ?? 0)}
+                    mode="currency"
+                    currency="MXN"
+                    locale="es-MX"
+                    style={{ width: '100%' }}
+                    inputStyle={{ width: '100%' }}
+                    min={0}
+                    autoFocus
+                />
+            </Dialog>
 
             {/* Sidebar */}
             <aside style={{ width: '220px', background: '#1a1a2e', color: '#fff', display: 'flex', flexDirection: 'column', padding: '1.5rem 1rem', flexShrink: 0 }}>

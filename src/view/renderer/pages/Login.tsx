@@ -22,7 +22,6 @@ function Login(): React.ReactElement {
         setError('')
         const result = await login(username, password)
         if (result.ok) {
-            console.log('Si llega aqui');
             navigate('/dashboard')
         } else {
             setError(result.error ?? 'Usuario o contraseña incorrectos')

@@ -46,7 +46,6 @@ function Dashboard(): React.ReactElement {
     async function checkOperation(): Promise<void> {
         try {
             const op = await window.electronAPI.operations.findOpen()
-            console.log(op);
             if (op) {
                 setOperation(op)
                 localStorage.setItem('operation_id', String(op.id))

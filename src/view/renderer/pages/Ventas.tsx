@@ -11,7 +11,6 @@ function Ventas(): React.ReactElement {
 
     console.log(location.pathname)
 
-
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f4f6f9' }}>
 

@@ -36,6 +36,7 @@ declare global {
             create: (payload: IpcOptions) => Promise<SaleTicket>
             findAll: (opts?: IpcOptions) => Promise<SaleTicket[]>
             findById: (id: number) => Promise<SaleTicket | null>
+            close: (id: number, data: IpcOptions) => Promise<{ ok: boolean }>
             articles: {
                 create: (data: IpcOptions) => Promise<{ id: number;[key: string]: unknown }>
                 update: (id: number, amount: number) => Promise<{ ok: boolean }>

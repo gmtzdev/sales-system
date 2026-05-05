@@ -144,4 +144,50 @@ export function registerSaleTicketHandlers(): void {
         await SaleTicketArticles.destroy({ where: { id } })
         return { ok: true }
     })
+
+    // Close an open ticket: decrement inventory, set totals, mark as closed
+    ipcMain.handle('salesticket:close', async (_event, id: number, data: {
+        total: number
+        subtotal: number
+        taxes: number
+        profit: number
+        notes?: string
+        pay_method?: string
+        cashier_id?: number
+    }) => {
+        const t = await sequelize.transaction()
+        try {
+            const articles = await SaleTicketArticles.findAll({ where: { ticket_id: id }, transaction: t })
+
+            for (const art of articles) {
+                await Product.decrement('dinventary', {
+                    by: art.amount,
+                    where: { code: art.product_code },
+                    transaction: t,
+                })
+            }
+
+            await SaleTicket.update(
+                {
+                    is_open: false,
+                    saled_at: new Date(),
+                    total: data.total,
+                    subtotal: data.subtotal,
+                    taxes: data.taxes,
+                    profit: data.profit,
+                    article_count: articles.length,
+                    notes: data.notes ?? '',
+                    pay_method: data.pay_method ?? 'cash',
+                    ...(data.cashier_id ? { cashier_id: data.cashier_id } : {}),
+                },
+                { where: { id }, transaction: t },
+            )
+
+            await t.commit()
+            return { ok: true }
+        } catch (err) {
+            await t.rollback()
+            throw err
+        }
+    })
 }

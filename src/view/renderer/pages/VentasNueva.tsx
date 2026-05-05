@@ -153,7 +153,7 @@ function VentasNueva(): React.ReactElement {
                 article_id: a.id,
             }))
             setCarrito(items)
-            setCarritoSeleccionado(null)
+            setCarritoSeleccionado(items[0]?.code ?? null)
         } catch (err) {
             toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
         }
@@ -351,24 +351,43 @@ function VentasNueva(): React.ReactElement {
             toast.current?.show({ severity: 'warn', summary: 'Carrito vacío', detail: 'Agrega al menos un producto' })
             return
         }
+        if (!ticketActivo) {
+            toast.current?.show({ severity: 'warn', summary: 'Sin ticket', detail: 'No hay ticket activo' })
+            return
+        }
         setGuardando(true)
         try {
-            await window.electronAPI.salesticket.create({
-                venta: {
-                    total,
-                    notas,
-                    vendedor: user?.username ?? '',
-                },
-                detalles: carrito.map(i => ({
-                    code: i.code,
-                    cantidad: i.amount,
-                    psale: i.psale,
-                    subtotal: i.subtotal,
-                })),
+            const subtotal = carrito.reduce((acc, i) => acc + i.subtotal, 0)
+            const profit = carrito.reduce((acc, i) => acc + (i.psale - 0) * i.amount, 0) // simplified profit
+
+            await window.electronAPI.salesticket.close(ticketActivo, {
+                total,
+                subtotal,
+                taxes: 0,
+                profit,
+                notes: notas,
+                pay_method: 'cash',
             })
+
             toast.current?.show({ severity: 'success', summary: 'Venta completada', detail: `Total: $${total.toFixed(2)}` })
-            limpiarCarrito()
-            // loadProductos()
+
+            // Remove closed ticket from list, create a fresh one
+            const remaining = tickets.filter(t => t.id !== ticketActivo)
+            const nombre = `Ticket #${tickets.length + 1}`
+            const newTicket: SaleTicket = {
+                box_id: 0,
+                cashier_id: 0,
+                name: nombre,
+                is_open: true,
+                operation_id: operation?.id ?? 0,
+            }
+            const created = await window.electronAPI.salesticket.create({ sale: newTicket, detalles: [] })
+            const updatedTickets = [...remaining, created]
+            setTickets(updatedTickets)
+            setTicketActivo(created.id ?? 0)
+            setCarrito([])
+            setNotas('')
+            setCarritoSeleccionado(null)
         } catch (err) {
             toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
         } finally {

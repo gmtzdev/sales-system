@@ -51,6 +51,22 @@ declare global {
             update: (id: number, data: IpcOptions) => Promise<unknown>
             delete: (id: number) => Promise<unknown>
         }
+        operations: {
+            findOpen: () => Promise<OperationRecord | null>
+            create: (data: IpcOptions) => Promise<OperationRecord>
+            close: (id: number) => Promise<{ affectedRows: number }>
+        }
+    }
+
+    interface OperationRecord {
+        id: number
+        money_in_box: number
+        exchange_rate: number
+        start_user_id: number
+        start_at: string
+        closed_at: string | null
+        box_id: number
+        is_open: boolean
     }
 
     interface Window {

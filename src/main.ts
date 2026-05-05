@@ -6,6 +6,7 @@ import { registerUsersHandlers } from './ipc/users.handlers'
 import { registerSaleTicketHandlers } from './ipc/saleticket.handlers'
 import { registerSuppliersHandlers } from './ipc/suppliers.handlers'
 import { registerDepartamentsHandlers } from './ipc/departaments.handlers'
+import { registerOperationsHandlers } from './ipc/operations.handlers'
 
 const isDev: boolean = !app.isPackaged
 
@@ -15,6 +16,7 @@ registerUsersHandlers()
 registerSaleTicketHandlers()
 registerSuppliersHandlers()
 registerDepartamentsHandlers()
+registerOperationsHandlers()
 
 function createWindow(): void {
     const win = new BrowserWindow({

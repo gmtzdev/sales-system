@@ -64,5 +64,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
         update: (id: number, data: IpcOptions) => ipcRenderer.invoke('departaments:update', id, data),
         delete: (id: number) => ipcRenderer.invoke('departaments:delete', id),
     },
+
+    // Operations API
+    operations: {
+        findOpen: () => ipcRenderer.invoke('operations:findOpen'),
+        create: (data: IpcOptions) => ipcRenderer.invoke('operations:create', data),
+        close: (id: number) => ipcRenderer.invoke('operations:close', id),
+    },
 })
 

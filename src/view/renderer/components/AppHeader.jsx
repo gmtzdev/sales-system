@@ -8,8 +8,8 @@ const NAV_ITEMS = [
     { key: 'clientes', label: 'Clientes', icon: 'pi pi-users', path: '/sales/historial', shortcut: 'F2' },
     { key: 'productos', label: 'Productos', icon: 'pi pi-box', path: '/sales/productos', shortcut: 'F3' },
     { key: 'inventario', label: 'Inventario', icon: 'pi pi-warehouse', path: '/sales/inventory', shortcut: 'F4' },
-    { key: 'corte', label: 'Corte', icon: 'pi pi-calculator', path: '/sales/corte', shortcut: 'F5' },
-    { key: 'configuracion', label: 'Configuración', icon: 'pi pi-cog', path: '/sales/configuracion', shortcut: 'F6' },
+    { key: 'configuracion', label: 'Configuración', icon: 'pi pi-cog', path: '/sales/configuracion', shortcut: 'F5' },
+    { key: 'corte', label: 'Corte', icon: 'pi pi-calculator', path: '/sales/corte', shortcut: 'F6' },
 ]
 
 /**

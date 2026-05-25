@@ -18,6 +18,7 @@ export interface ProductAttributes {
     profitporcentage: number
     components: string
     taxes: string
+    image?: string
 }
 
 type ProductCreationAttributes = Optional<
@@ -43,6 +44,7 @@ class Product extends Model<ProductAttributes, ProductCreationAttributes>
     declare profitporcentage: number
     declare components: string
     declare taxes: string
+    declare image?: string
 }
 
 Product.init(
@@ -95,6 +97,7 @@ Product.init(
         components: { type: DataTypes.TEXT, defaultValue: '' },
         // JSON string with applied tax IDs
         taxes: { type: DataTypes.TEXT, defaultValue: '' },
+        image: { type: DataTypes.STRING(255), allowNull: true },
     },
     { sequelize, tableName: 'products', timestamps: false }
 )

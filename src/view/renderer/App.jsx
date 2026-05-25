@@ -10,6 +10,7 @@ import VentasHistorial from './pages/VentasHistorial'
 import Inventory from './pages/sales/Inventory'
 import Suppliers from './pages/admin/Suppliers'
 import SalesResumen from './pages/SalesResumen'
+import CorteDeCaja from './pages/sales/CorteDeCaja'
 
 function App() {
     return (
@@ -60,6 +61,11 @@ function App() {
                         <Route
                             path='resumen'
                             element={<SalesResumen />}
+                        />
+
+                        <Route
+                            path='corte'
+                            element={<CorteDeCaja />}
                         />
                     </Route>
 

@@ -15,6 +15,7 @@ import { Badge } from 'primereact/badge'
 import './VentasNueva.css'
 import { where } from 'sequelize'
 import { SaleTicket } from '../core/interfaces/SaleTicket.interface'
+import { Dialog } from 'primereact/dialog'
 
 interface TabItem {
     key: string
@@ -346,7 +347,7 @@ function VentasNueva(): React.ReactElement {
     const total = carrito.reduce((acc, i) => acc + i.subtotal, 0)
 
     // ── Completar venta ──────────────────────────────────────────
-    async function completarVenta(): Promise<void> {
+    async function completarVenta(selectedPayMethod: 'cash' | 'card' | 'credit' = 'cash'): Promise<void> {
         if (carrito.length === 0) {
             toast.current?.show({ severity: 'warn', summary: 'Carrito vacío', detail: 'Agrega al menos un producto' })
             return
@@ -366,7 +367,7 @@ function VentasNueva(): React.ReactElement {
                 taxes: 0,
                 profit,
                 notes: notas,
-                pay_method: 'cash',
+                pay_method: selectedPayMethod,
             })
 
             toast.current?.show({ severity: 'success', summary: 'Venta completada', detail: `Total: $${total.toFixed(2)}` })
@@ -395,6 +396,11 @@ function VentasNueva(): React.ReactElement {
         }
     }
 
+
+    const [visible, setVisible] = useState(false)
+    const [payMethod, setPayMethod] = useState<'cash' | 'card' | 'credit'>('cash')
+    const [cashReceived, setCashReceived] = useState<number>(0)
+
     function pedirConfirmacion(): void {
         confirmDialog({
             message: `¿Confirmar venta por $${total.toFixed(2)}?`,
@@ -404,6 +410,8 @@ function VentasNueva(): React.ReactElement {
             rejectLabel: 'Cancelar',
             accept: completarVenta,
         })
+
+
     }
 
     const productosFiltrados = productos.filter(p => {
@@ -757,8 +765,139 @@ function VentasNueva(): React.ReactElement {
                                     style={{ width: '11rem', height: '3rem' }}
                                     disabled={carrito.length === 0 || guardando}
                                     loading={guardando}
-                                    onClick={pedirConfirmacion}
+                                    onClick={() => { setCashReceived(0); setPayMethod('cash'); setVisible(true) }}
                                 />
+
+                                <Dialog
+                                    header={
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <i className="pi pi-shopping-bag" style={{ color: '#1e90ff', fontSize: '1.2rem' }} />
+                                            <span>Cobrar venta</span>
+                                        </div>
+                                    }
+                                    visible={visible}
+                                    modal
+                                    style={{ width: '480px' }}
+                                    onHide={() => setVisible(false)}
+                                    footer={
+                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                                            <Button
+                                                label="Cancelar"
+                                                icon="pi pi-times"
+                                                text
+                                                severity="secondary"
+                                                onClick={() => setVisible(false)}
+                                            />
+                                            <Button
+                                                label="Cobrar (solo registrar)"
+                                                icon="pi pi-save"
+                                                outlined
+                                                disabled={guardando}
+                                                loading={guardando}
+                                                onClick={() => { setVisible(false); completarVenta(payMethod) }}
+                                            />
+                                            <Button
+                                                label="Cobrar e imprimir ticket"
+                                                icon="pi pi-print"
+                                                disabled={guardando}
+                                                loading={guardando}
+                                                onClick={() => { setVisible(false); completarVenta(payMethod) }}
+                                            />
+                                        </div>
+                                    }
+                                >
+                                    {/* Total destacado */}
+                                    <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+                                        <div style={{ fontSize: '0.85rem', color: '#888', marginBottom: '0.25rem' }}>Total a cobrar</div>
+                                        <div style={{ fontSize: '2.8rem', fontWeight: 900, color: '#1a1a2e', lineHeight: 1 }}>${total.toFixed(2)}</div>
+                                        <div style={{ fontSize: '0.82rem', color: '#aaa', marginTop: '0.3rem' }}>
+                                            {carrito.length} {carrito.length === 1 ? 'artículo' : 'artículos'}
+                                        </div>
+                                    </div>
+
+                                    <Divider style={{ margin: '0.75rem 0' }} />
+
+                                    {/* Método de pago */}
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', fontWeight: 600, fontSize: '0.88rem', marginBottom: '0.5rem', color: '#444' }}>
+                                            Método de pago
+                                        </label>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            {([
+                                                { key: 'cash', label: 'Efectivo', icon: 'pi pi-money-bill' },
+                                                { key: 'card', label: 'Tarjeta', icon: 'pi pi-credit-card' },
+                                                { key: 'credit', label: 'Crédito', icon: 'pi pi-wallet' },
+                                            ] as const).map(opt => (
+                                                <Button
+                                                    key={opt.key}
+                                                    label={opt.label}
+                                                    icon={opt.icon}
+                                                    style={{
+                                                        flex: 1,
+                                                        background: payMethod === opt.key ? '#1e90ff' : '#fff',
+                                                        color: payMethod === opt.key ? '#fff' : '#555',
+                                                        border: `1px solid ${payMethod === opt.key ? '#1e90ff' : '#dde2ea'}`,
+                                                        fontWeight: payMethod === opt.key ? 700 : 400,
+                                                    }}
+                                                    onClick={() => setPayMethod(opt.key)}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Efectivo recibido – solo para pago en efectivo */}
+                                    {payMethod === 'cash' && (
+                                        <div style={{ marginBottom: '0.75rem' }}>
+                                            <label style={{ display: 'block', fontWeight: 600, fontSize: '0.88rem', marginBottom: '0.4rem', color: '#444' }}>
+                                                Efectivo recibido
+                                            </label>
+                                            <InputNumber
+                                                value={cashReceived}
+                                                onValueChange={e => setCashReceived(e.value ?? 0)}
+                                                mode="currency"
+                                                currency="MXN"
+                                                locale="es-MX"
+                                                min={0}
+                                                style={{ width: '100%' }}
+                                                inputStyle={{ width: '100%' }}
+                                                autoFocus
+                                            />
+                                            {cashReceived >= total && total > 0 && (
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.6rem', padding: '0.6rem 0.75rem', background: '#e9f7ec', borderRadius: '8px' }}>
+                                                    <span style={{ fontWeight: 600, color: '#28a745' }}>Cambio</span>
+                                                    <span style={{ fontWeight: 800, color: '#28a745', fontSize: '1.15rem' }}>
+                                                        ${(cashReceived - total).toFixed(2)}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {cashReceived > 0 && cashReceived < total && (
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.6rem', padding: '0.6rem 0.75rem', background: '#fdecea', borderRadius: '8px' }}>
+                                                    <span style={{ fontWeight: 600, color: '#dc3545' }}>Falta</span>
+                                                    <span style={{ fontWeight: 800, color: '#dc3545', fontSize: '1.15rem' }}>
+                                                        ${(total - cashReceived).toFixed(2)}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <Divider style={{ margin: '0.75rem 0' }} />
+
+                                    {/* Resumen de artículos */}
+                                    <div>
+                                        <label style={{ display: 'block', fontWeight: 600, fontSize: '0.88rem', marginBottom: '0.5rem', color: '#444' }}>
+                                            Resumen de la venta
+                                        </label>
+                                        <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
+                                            {carrito.map(item => (
+                                                <div key={item.code} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.25rem 0', borderBottom: '1px solid #f0f0f0', color: '#555' }}>
+                                                    <span>{item.description} <span style={{ color: '#aaa' }}>× {item.amount}</span></span>
+                                                    <span style={{ fontWeight: 600 }}>${item.subtotal.toFixed(2)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </Dialog>
                             </div>
                         </div>
 

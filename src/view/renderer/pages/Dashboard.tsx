@@ -2,9 +2,8 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Button } from 'primereact/button'
-import { Dialog } from 'primereact/dialog'
-import { InputNumber } from 'primereact/inputnumber'
 import { Toast } from 'primereact/toast'
+import OpenOperationDialog from '../components/OpenOperationDialog'
 import Productos from './Productos'
 import Users from './admin/Users'
 import Suppliers from './admin/Suppliers'
@@ -36,31 +35,36 @@ function Dashboard(): React.ReactElement {
     const [operation, setOperation] = useState<OperationRecord | null>(null)
     const [checkingOp, setCheckingOp] = useState<boolean>(true)
     const [openOpDialog, setOpenOpDialog] = useState<boolean>(false)
-    const [moneyInBox, setMoneyInBox] = useState<number>(0)
     const [savingOp, setSavingOp] = useState<boolean>(false)
 
-    useEffect(() => {
-        checkOperation()
-    }, [])
+    // useEffect(() => {
+    //     // Al cargar el dashboard, verificamos si hay una operación abierta
+    //     checkOperation()
+    // }, [])
 
-    async function checkOperation(): Promise<void> {
+    async function checkOperation(): Promise<boolean> {
+        let result = null;
         try {
             const op = await window.electronAPI.operations.findOpen()
             if (op) {
                 setOperation(op)
                 localStorage.setItem('operation_id', String(op.id))
+                result = true
             } else {
                 localStorage.removeItem('operation_id')
                 setOpenOpDialog(true)
+                result = false
             }
         } catch (err) {
             toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
+            result = false
         } finally {
             setCheckingOp(false)
         }
+        return result;
     }
 
-    async function crearOperacion(): Promise<void> {
+    async function crearOperacion(moneyInBox: number): Promise<void> {
         setSavingOp(true)
         try {
             const op = await window.electronAPI.operations.create({
@@ -73,6 +77,7 @@ function Dashboard(): React.ReactElement {
             localStorage.setItem('operation_id', String(op.id))
             setOpenOpDialog(false)
             toast.current?.show({ severity: 'success', summary: 'Operación abierta', detail: `Fondo: $${moneyInBox.toFixed(2)}` })
+            navigate('/sales/index')
         } catch (err) {
             toast.current?.show({ severity: 'error', summary: 'Error', detail: (err as Error).message })
         } finally {
@@ -85,6 +90,13 @@ function Dashboard(): React.ReactElement {
         navigate('/')
     }
 
+    // New Sale
+    async function handleNewSale(): Promise<void> {
+        if (await checkOperation()) {
+            navigate('/sales/index')
+        }
+    }
+
     const currentPage = PAGES.find(p => p.key === activePage)
 
     return (
@@ -92,42 +104,12 @@ function Dashboard(): React.ReactElement {
             <Toast ref={toast} />
 
             {/* Modal: nueva operación */}
-            <Dialog
-                header="Abrir operación del día"
+            <OpenOperationDialog
                 visible={openOpDialog}
-                style={{ width: '380px' }}
-                closable={false}
-                draggable={false}
-                onHide={() => { /* no se puede cerrar sin crear operación */ }}
-                footer={
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                        <Button
-                            label="Abrir operación"
-                            icon="pi pi-check"
-                            onClick={crearOperacion}
-                            loading={savingOp}
-                        />
-                    </div>
-                }
-            >
-                <p style={{ marginBottom: '1rem', color: '#555' }}>
-                    No hay ninguna operación abierta. Ingresa el fondo inicial de caja para comenzar.
-                </p>
-                <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 500 }}>
-                    Fondo inicial de caja
-                </label>
-                <InputNumber
-                    value={moneyInBox}
-                    onValueChange={e => setMoneyInBox(e.value ?? 0)}
-                    mode="currency"
-                    currency="MXN"
-                    locale="es-MX"
-                    style={{ width: '100%' }}
-                    inputStyle={{ width: '100%' }}
-                    min={0}
-                    autoFocus
-                />
-            </Dialog>
+                loading={savingOp}
+                onHide={() => setOpenOpDialog(false)}
+                onConfirm={crearOperacion}
+            />
 
             {/* Sidebar */}
             <aside style={{ width: '220px', background: '#1a1a2e', color: '#fff', display: 'flex', flexDirection: 'column', padding: '1.5rem 1rem', flexShrink: 0 }}>
@@ -161,7 +143,7 @@ function Dashboard(): React.ReactElement {
                             icon="pi pi-shopping-cart"
                             severity="success"
                             size="small"
-                            onClick={() => navigate('/sales/index')}
+                            onClick={handleNewSale}
                         />
                         <span style={{ fontSize: '0.9rem', color: '#555' }}>
                             <i className="pi pi-user" style={{ marginRight: '0.4rem' }} />

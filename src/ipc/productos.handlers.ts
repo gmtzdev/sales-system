@@ -1,4 +1,7 @@
-import { ipcMain } from 'electron'
+import { ipcMain, app } from 'electron'
+import fs from 'fs'
+import path from 'path'
+import { randomUUID } from 'crypto'
 import type { Order, WhereOptions } from 'sequelize'
 import Product, { type ProductAttributes } from '../database/models/Product'
 
@@ -41,5 +44,22 @@ export function registerProductosHandlers(): void {
     ipcMain.handle('productos:delete', async (_event, code: string) => {
         const affectedRows = await Product.destroy({ where: { code } })
         return { affectedRows }
+    })
+
+    ipcMain.handle('productos:saveImage', async (_event, fileName: string, buffer: number[]) => {
+        const dir = path.join(app.getPath('userData'), 'products')
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+        const ext = path.extname(fileName) || '.jpg'
+        const name = `${randomUUID()}${ext}`
+        const filePath = path.join(dir, name)
+        fs.writeFileSync(filePath, Buffer.from(buffer))
+        return name
+    })
+
+    ipcMain.handle('productos:deleteImage', async (_event, fileName: string) => {
+        const dir = path.join(app.getPath('userData'), 'products')
+        const filePath = path.join(dir, path.basename(fileName))
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+        return { ok: true }
     })
 }

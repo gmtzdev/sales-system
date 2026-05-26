@@ -23,6 +23,8 @@ declare global {
             create: (data: IpcOptions) => Promise<unknown>
             update: (code: string, data: IpcOptions) => Promise<unknown>
             delete: (code: string) => Promise<unknown>
+            saveImage: (fileName: string, buffer: number[]) => Promise<string>
+            deleteImage: (filePath: string) => Promise<{ ok: boolean }>
         }
         users: {
             findAll: (opts?: IpcOptions) => Promise<unknown[]>

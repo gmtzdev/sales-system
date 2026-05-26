@@ -33,6 +33,7 @@ interface ProductForm {
     // eager-loaded associations
     supplier?: { id: number; name: string }
     departament?: { id: number; name: string }
+    image: string | null
 }
 
 interface LookupOption {
@@ -61,11 +62,13 @@ const EMPTY_PRODUCT: ProductForm = {
     umeas: 0, wholeSale: 0, ipriority: 0,
     dinventary: 0, dinventarymin: 0, dinventarymax: 0,
     profitporcentage: 0, components: '', taxes: '',
+    image: null
 }
 
 function Productos() {
     const toast = useRef<Toast>(null)
     const codeInputRef = useRef<HTMLInputElement>(null)
+    const imageInputRef = useRef<HTMLInputElement>(null)
     const [productos, setProductos] = useState<ProductForm[]>([])
     const [loading, setLoading] = useState(false)
     const [globalFilter, setGlobalFilter] = useState('')
@@ -151,6 +154,7 @@ function Productos() {
             profitporcentage: product.profitporcentage,
             components: product.components,
             taxes: product.taxes,
+            image: product.image ?? undefined,
         }
         try {
             if (isEditing) {
@@ -179,6 +183,23 @@ function Productos() {
             acceptClassName: 'p-button-danger',
             accept: () => deleteProduct(row),
         })
+    }
+
+    function toFileUrl(p: string): string {
+        return 'product-img:///' + encodeURIComponent(p)
+    }
+
+    async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0]
+        if (!file) return
+        if (product.image) {
+            await window.electronAPI.productos.deleteImage(product.image)
+        }
+        const arrayBuffer = await file.arrayBuffer()
+        const buffer = Array.from(new Uint8Array(arrayBuffer))
+        const savedPath = await window.electronAPI.productos.saveImage(file.name, buffer)
+        setProduct(p => ({ ...p, image: savedPath }))
+        e.target.value = ''
     }
 
     async function deleteProduct(row: ProductForm) {
@@ -247,6 +268,11 @@ function Productos() {
                 emptyMessage="Sin productos"
                 stripedRows
             >
+                {/* <Column header="" style={{ width: '60px' }} body={(r: ProductForm) =>
+                    r.image
+                        ? <img src={toFileUrl(r.image)} alt="" style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} />
+                        : <i className="pi pi-image" style={{ color: '#ccc', fontSize: '1.25rem' }} />
+                } /> */}
                 <Column field="code" header="Código" sortable style={{ width: '130px' }} />
                 <Column field="description" header="Descripción" />
                 <Column header="Proveedor" body={(r: ProductForm) => r.supplier?.name ?? '—'} />
@@ -285,6 +311,34 @@ function Productos() {
                             />
                         </F>
                     </div>
+
+                    {/* Imagen */}
+                    <F label="Imagen">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            ref={imageInputRef}
+                            style={{ display: 'none' }}
+                            onChange={handleImageChange}
+                        />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            {product.image
+                                ? <img src={toFileUrl(product.image)} alt="Producto" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #e0e0e0' }} />
+                                : <div style={{ width: '80px', height: '80px', border: '2px dashed #ccc', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <i className="pi pi-image" style={{ fontSize: '2rem', color: '#ccc' }} />
+                                </div>
+                            }
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <Button type="button" label="Seleccionar" icon="pi pi-upload" outlined size="small" onClick={() => imageInputRef.current?.click()} />
+                                {product.image && (
+                                    <Button type="button" label="Quitar" icon="pi pi-times" outlined severity="danger" size="small" onClick={async () => {
+                                        await window.electronAPI.productos.deleteImage(product.image!)
+                                        setProduct(p => ({ ...p, image: null }))
+                                    }} />
+                                )}
+                            </div>
+                        </div>
+                    </F>
 
                     {/* Descripción */}
                     <F label="Descripción">

@@ -28,6 +28,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
         create: (data: IpcOptions) => ipcRenderer.invoke('productos:create', data),
         update: (code: string, data: IpcOptions) => ipcRenderer.invoke('productos:update', code, data),
         delete: (code: string) => ipcRenderer.invoke('productos:delete', code),
+        saveImage: (fileName: string, buffer: number[]) => ipcRenderer.invoke('productos:saveImage', fileName, buffer),
+        deleteImage: (filePath: string) => ipcRenderer.invoke('productos:deleteImage', filePath),
     },
 
     // Users API

@@ -1,5 +1,6 @@
-import { app, BrowserWindow, Menu, MenuItem } from 'electron'
+import { app, BrowserWindow, Menu, MenuItem, protocol, net } from 'electron'
 import path from 'path'
+import { pathToFileURL } from 'url'
 import { initDatabase, closeDatabase } from './database/models'
 import { registerProductosHandlers } from './ipc/productos.handlers'
 import { registerUsersHandlers } from './ipc/users.handlers'
@@ -9,6 +10,11 @@ import { registerDepartamentsHandlers } from './ipc/departaments.handlers'
 import { registerOperationsHandlers } from './ipc/operations.handlers'
 
 const isDev: boolean = !app.isPackaged
+
+// Register custom scheme before app is ready
+protocol.registerSchemesAsPrivileged([
+    { scheme: 'product-img', privileges: { secure: true, bypassCSP: true, stream: true } },
+])
 
 // Register all IPC handlers before creating any window
 registerProductosHandlers()
@@ -55,6 +61,13 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+    // Serve product images from {userData}/products/ via custom protocol
+    protocol.handle('product-img', (request) => {
+        const fileName = path.basename(decodeURIComponent(new URL(request.url).pathname))
+        const filePath = path.join(app.getPath('userData'), 'products', fileName)
+        return net.fetch(pathToFileURL(filePath).toString())
+    })
+
     initDatabase()
     createWindow()
 
